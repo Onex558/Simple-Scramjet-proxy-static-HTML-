@@ -1,289 +1,255 @@
 <!DOCTYPE html>
-<!--
-  Hey you! Yeah, you reading this like a curious little nerd.
-  This is Road.js' "I kinda know what I'm doing" browser proxy.
-  Warning: I hate HTML. I hate static pages. I still made this. Somehow.
-  Don't @ me. Just enjoy the chaos. 💀❤️
--->
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Axiom Browser</title>
-  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Axiom Browser</title>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dreamland"></script>
+<script src="/baremux/index.js"></script>
+<script src="/scram/scramjet.all.js"></script>
+<script src="/proxy.config.js"></script>
 
-  <style>
-    :root {
-      --bg: #05050a;
-      --surface: #0a0a12;
-      --surface-2: #0e0e18;
-      --button-bg: #10101b;
-      --button-hover: #17172a;
-      --third-bg: #1b1930;
-      --primary: #8b6cff;
-      --primary-2: #5f4bff;
-      --text-color: #f5f3ff;
-      --secondary-text-color: #9b96ad;
-      --border: rgba(139,108,255,.16);
-      --glow: rgba(139,108,255,.20);
-    }
-
-    * { box-sizing: border-box; }
-
-    html, body, #app {
-      width: 100vw;
-      height: 100vh;
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      background:
-        radial-gradient(circle at 50% -20%, rgba(139,108,255,.14), transparent 38%),
-        var(--bg);
-      color: var(--text-color);
-      font-family: Inter, Outfit, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-    }
-
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      background:
-        radial-gradient(circle at 15% 80%, rgba(95,75,255,.07), transparent 28%),
-        radial-gradient(circle at 85% 20%, rgba(139,108,255,.06), transparent 25%);
-      z-index: 0;
-    }
-
-    button, input { font: inherit; }
-
-    .browser-container {
-      position: relative;
-      z-index: 1;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      padding: 12px;
-      gap: 10px;
-      color: var(--text-color);
-    }
-
-    .tabs {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      min-height: 45px;
-      overflow-x: auto;
-      overflow-y: hidden;
-      white-space: nowrap;
-      padding: 0 2px;
-    }
-
-    .tabs::-webkit-scrollbar { height: 3px; }
-    .tabs::-webkit-scrollbar-track { background: transparent; }
-    .tabs::-webkit-scrollbar-thumb {
-      background: rgba(139,108,255,.35);
-      border-radius: 99px;
-    }
-
-    .tab {
-      position: relative;
-      color: var(--text-color);
-      border: 1px solid var(--border);
-      border-radius: 11px;
-      background: rgba(12,12,20,.86);
-      padding: 8px 10px;
-      width: 225px;
-      min-width: 225px;
-      height: 40px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-      flex-shrink: 0;
-      transition: .18s ease;
-      box-shadow: 0 4px 18px rgba(0,0,0,.16);
-    }
-
-    .tab:hover {
-      background: #12121f;
-      border-color: rgba(139,108,255,.30);
-      transform: translateY(-1px);
-    }
-
-    .tab.active {
-      background: linear-gradient(135deg, rgba(139,108,255,.18), rgba(95,75,255,.08));
-      border-color: rgba(139,108,255,.48);
-      box-shadow: 0 0 22px rgba(139,108,255,.10);
-    }
-
-    .tab-favicon {
-      width: 18px;
-      height: 18px;
-      flex-shrink: 0;
-      border-radius: 5px;
-    }
-
-    .tab-title {
-      flex: 1;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      font-size: .91rem;
-      font-weight: 500;
-    }
-
-    .tab-close {
-      background: transparent;
-      border: 0;
-      color: var(--secondary-text-color);
-      cursor: pointer;
-      width: 24px;
-      height: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 7px;
-      flex-shrink: 0;
-      transition: .18s ease;
-      font-size: 1.15rem;
-    }
-
-    .tab-close:hover {
-      background: rgba(255,255,255,.07);
-      color: white;
-    }
-
-    .new-tab {
-      color: var(--text-color);
-      border: 1px solid var(--border);
-      border-radius: 11px;
-      background: rgba(12,12,20,.86);
-      width: 40px;
-      height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      flex-shrink: 0;
-      transition: .18s ease;
-      font-size: 1.2rem;
-    }
-
-    .new-tab:hover {
-      background: var(--button-hover);
-      border-color: rgba(139,108,255,.42);
-      box-shadow: 0 0 18px var(--glow);
-    }
-
-    .nav {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      padding: 0;
-      min-height: 48px;
-    }
-
-    .nav button {
-      color: var(--text-color);
-      outline: none;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      background: linear-gradient(180deg, #11111c, #0c0c15);
-      width: 43px;
-      height: 43px;
-      padding: 0;
-      cursor: pointer;
-      transition: .18s ease;
-      font-size: 1.05rem;
-    }
-
-    .nav button:hover {
-      background: var(--button-hover);
-      border-color: rgba(139,108,255,.42);
-      box-shadow: 0 0 16px rgba(139,108,255,.10);
-    }
-
-    input.bar {
-      min-width: 0;
-      height: 43px;
-      flex: 1;
-      padding: 0 16px;
-      border: 1px solid var(--border);
-      outline: none;
-      border-radius: 11px;
-      color: var(--text-color);
-      background: #0b0b13;
-      font-size: .98rem;
-      transition: .2s ease;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.01);
-    }
-
-    input.bar:focus {
-      border-color: rgba(139,108,255,.55);
-      background: #0d0d17;
-      box-shadow: 0 0 0 3px rgba(139,108,255,.08), 0 0 22px rgba(139,108,255,.08);
-    }
-
-    .version {
-      color: var(--secondary-text-color) !important;
-      font-size: .82rem;
-      margin: 0 4px 0 3px;
-      white-space: nowrap;
-      opacity: .8;
-    }
-
-    .version b {
-      color: var(--primary);
-      letter-spacing: .04em;
-    }
-
-    .iframe-container {
-      flex: 1;
-      min-height: 0;
-      position: relative;
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      overflow: hidden;
-      background: #fff;
-      box-shadow: 0 12px 45px rgba(0,0,0,.28), 0 0 35px rgba(139,108,255,.05);
-    }
-
-    .iframe-container iframe {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      border: 0;
-      background: #fff;
-    }
-
-    .iframe-container iframe.hidden { display: none; }
-
-    .sortable-ghost { opacity: .45 !important; }
-    .sortable-drag {
-      transform: rotate(1deg);
-      box-shadow: 0 12px 30px rgba(0,0,0,.5), 0 0 25px rgba(139,108,255,.15);
-    }
-
-    @media (max-width: 700px) {
-      .browser-container { padding: 8px; gap: 7px; }
-      .tab { width: 180px; min-width: 180px; }
-      .version { display: none; }
-      .nav button { width: 39px; height: 39px; }
-      input.bar { height: 39px; font-size: .9rem; }
-    }
-  </style>
-
-  <script src="https://cdn.jsdelivr.net/npm/dreamland"></script>
-  <script src="/baremux/index.js"></script>
-  <script src="/scram/scramjet.all.js"></script>
-  <script src="/proxy.config.js"></script>
+<style>
+:root{
+  --bg:#05050a;
+  --panel:#0a0a12;
+  --panel2:#0e0e18;
+  --panel3:#12121f;
+  --purple:#8b6cff;
+  --purple2:#654cff;
+  --blue:#667aff;
+  --text:#f5f3ff;
+  --muted:#9993ad;
+  --line:rgba(139,108,255,.15);
+  --line2:rgba(255,255,255,.07);
+}
+*{box-sizing:border-box}
+html,body,#app{width:100%;height:100%;margin:0;overflow:hidden}
+body{
+  background:
+    radial-gradient(900px 500px at 50% -180px,rgba(139,108,255,.17),transparent 65%),
+    radial-gradient(600px 400px at 100% 100%,rgba(76,72,255,.08),transparent 65%),
+    var(--bg);
+  color:var(--text);
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+button,input{font:inherit}
+button{border:0}
+.app-shell{height:100%;display:flex;position:relative}
+.sidebar{
+  width:245px;min-width:245px;
+  background:rgba(7,7,13,.88);
+  border-right:1px solid var(--line);
+  padding:22px 15px;
+  display:flex;flex-direction:column;
+  backdrop-filter:blur(22px);
+}
+.brand{
+  display:flex;align-items:center;gap:11px;
+  padding:3px 9px 28px;
+}
+.brand-mark{
+  width:35px;height:35px;border-radius:11px;
+  display:grid;place-items:center;
+  background:linear-gradient(135deg,var(--purple),var(--blue));
+  box-shadow:0 0 30px rgba(139,108,255,.28);
+  font-weight:900;color:white;font-size:17px;
+}
+.brand-name{font-size:21px;font-weight:800;letter-spacing:-.04em}
+.brand-sub{font-size:10px;color:var(--muted);margin-top:1px;letter-spacing:.13em}
+.side-section{font-size:10px;color:#6f6a80;text-transform:uppercase;letter-spacing:.13em;padding:0 10px 8px}
+.side-btn{
+  width:100%;height:43px;margin-bottom:5px;
+  padding:0 12px;border-radius:10px;
+  display:flex;align-items:center;gap:11px;
+  background:transparent;color:#aaa4ba;text-align:left;
+  cursor:pointer;transition:.18s;
+}
+.side-btn:hover,.side-btn.active{
+  color:white;background:linear-gradient(90deg,rgba(139,108,255,.15),rgba(139,108,255,.04));
+}
+.side-btn.active{box-shadow:inset 2px 0 var(--purple)}
+.side-icon{width:20px;text-align:center;font-size:17px}
+.side-bottom{margin-top:auto}
+.main{min-width:0;flex:1;height:100%;display:flex;flex-direction:column}
+.topbar{
+  height:70px;display:flex;align-items:center;gap:10px;
+  padding:12px 18px;border-bottom:1px solid var(--line);
+  background:rgba(5,5,10,.64);backdrop-filter:blur(20px);
+}
+.window-title{
+  min-width:105px;font-size:12px;color:var(--muted);
+  font-weight:600;letter-spacing:.02em;
+}
+.nav-controls{display:flex;gap:5px}
+.nav-btn{
+  width:38px;height:38px;border-radius:10px;
+  color:#aaa4ba;background:var(--panel2);
+  border:1px solid var(--line);cursor:pointer;transition:.18s;
+}
+.nav-btn:hover{color:white;background:var(--panel3);border-color:rgba(139,108,255,.35)}
+.address-wrap{
+  flex:1;max-width:900px;margin:auto;
+  height:43px;position:relative;
+}
+.address{
+  width:100%;height:100%;padding:0 45px 0 43px;
+  color:white;background:#0b0b14;
+  border:1px solid var(--line);border-radius:13px;
+  outline:none;transition:.2s;
+}
+.address:focus{
+  border-color:rgba(139,108,255,.48);
+  box-shadow:0 0 0 3px rgba(139,108,255,.07),0 0 30px rgba(139,108,255,.08);
+}
+.address-icon{
+  position:absolute;left:15px;top:12px;color:var(--purple);pointer-events:none
+}
+.address-go{
+  position:absolute;right:7px;top:6px;width:31px;height:31px;
+  border-radius:9px;background:rgba(139,108,255,.12);color:#c8c0ff;cursor:pointer;
+}
+.top-actions{display:flex;gap:6px}
+.content{flex:1;min-height:0;position:relative}
+.newtab{
+  position:absolute;inset:0;z-index:10;
+  display:flex;align-items:center;justify-content:center;
+  overflow:auto;padding:40px;
+  background:
+    radial-gradient(700px 400px at 50% 35%,rgba(139,108,255,.11),transparent 70%),
+    var(--bg);
+}
+.newtab-inner{width:min(820px,100%);text-align:center}
+.hero-mark{
+  width:68px;height:68px;margin:0 auto 18px;border-radius:20px;
+  display:grid;place-items:center;
+  background:linear-gradient(135deg,var(--purple),var(--blue));
+  font-size:30px;font-weight:900;
+  box-shadow:0 0 55px rgba(139,108,255,.25);
+}
+.hero-title{font-size:48px;letter-spacing:-.065em;margin:0;font-weight:850}
+.hero-copy{color:var(--muted);margin:8px 0 30px;font-size:14px}
+.home-search{
+  height:58px;width:100%;padding:0 22px;
+  border-radius:17px;border:1px solid var(--line);
+  outline:none;background:rgba(12,12,20,.92);color:white;
+  box-shadow:0 12px 50px rgba(0,0,0,.25);
+}
+.home-search:focus{border-color:rgba(139,108,255,.5);box-shadow:0 0 35px rgba(139,108,255,.1)}
+.quick-grid{
+  margin-top:25px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;
+}
+.quick{
+  padding:15px;border:1px solid var(--line);border-radius:14px;
+  background:rgba(11,11,19,.72);text-align:left;cursor:pointer;color:white;
+  transition:.18s;
+}
+.quick:hover{transform:translateY(-2px);background:var(--panel2);border-color:rgba(139,108,255,.35)}
+.quick-icon{font-size:19px;margin-bottom:8px}.quick-title{font-size:13px;font-weight:700}.quick-desc{font-size:10px;color:var(--muted);margin-top:3px}
+.tabsbar{
+  height:45px;display:flex;align-items:end;gap:5px;
+  padding:5px 14px 0;background:#07070d;border-bottom:1px solid var(--line);
+  overflow-x:auto;
+}
+.tab{
+  height:40px;min-width:185px;max-width:240px;
+  display:flex;align-items:center;gap:8px;padding:0 9px;
+  background:#0b0b13;border:1px solid transparent;border-radius:10px 10px 0 0;
+  color:#9690a5;cursor:pointer;flex-shrink:0;
+}
+.tab.active{background:#10101a;color:white;border-color:var(--line);border-bottom-color:#10101a}
+.tab-favicon{width:17px;height:17px;border-radius:4px;flex-shrink:0}
+.tab-title{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+.tab-close{background:transparent;color:#777184;border-radius:6px;width:23px;height:23px;cursor:pointer}
+.tab-close:hover{background:#1c1b27;color:white}
+.new-tab-btn{
+  width:37px;height:37px;border-radius:9px;background:#0b0b13;
+  color:#aaa4ba;border:1px solid var(--line);cursor:pointer;flex-shrink:0;
+}
+.new-tab-btn:hover{color:white;background:#151422}
+.frames{position:absolute;inset:0;background:white}
+.frames iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:white}
+.frames iframe.hidden{display:none}
+.status{
+  position:absolute;right:18px;bottom:15px;z-index:20;
+  padding:7px 11px;border:1px solid var(--line);border-radius:9px;
+  background:rgba(9,9,15,.85);color:#777184;font-size:10px;backdrop-filter:blur(12px)
+}
+@media(max-width:760px){
+  .sidebar{width:65px;min-width:65px;padding:15px 8px}
+  .brand{justify-content:center;padding-bottom:22px}.brand-name,.brand-sub,.side-section,.side-label{display:none}
+  .side-btn{justify-content:center;padding:0}.side-icon{font-size:19px}
+  .topbar{padding:8px 10px}.window-title{display:none}.top-actions{display:none}
+  .quick-grid{grid-template-columns:repeat(2,1fr)}
+  .hero-title{font-size:38px}.newtab{padding:25px 16px}
+}
+</style>
 </head>
 <body>
-  <div id="app"></div>
+<div id="app">
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">A</div>
+        <div><div class="brand-name">axiom</div><div class="brand-sub">BROWSER</div></div>
+      </div>
+      <div class="side-section">Workspace</div>
+      <button class="side-btn active"><span class="side-icon">⌂</span><span class="side-label">Home</span></button>
+      <button class="side-btn"><span class="side-icon">★</span><span class="side-label">Favorites</span></button>
+      <button class="side-btn"><span class="side-icon">◷</span><span class="side-label">History</span></button>
+      <button class="side-btn"><span class="side-icon">＋</span><span class="side-label">New tab</span></button>
+      <div class="side-bottom">
+        <div class="side-section">Axiom</div>
+        <button class="side-btn"><span class="side-icon">⚙</span><span class="side-label">Settings</span></button>
+        <button class="side-btn"><span class="side-icon">?</span><span class="side-label">About</span></button>
+      </div>
+    </aside>
 
-  <script>
+    <main class="main">
+      <div class="topbar">
+        <div class="window-title">Axiom Browser</div>
+        <div class="nav-controls">
+          <button class="nav-btn" id="backBtn">←</button>
+          <button class="nav-btn" id="forwardBtn">→</button>
+          <button class="nav-btn" id="reloadBtn">↻</button>
+        </div>
+        <div class="address-wrap">
+          <span class="address-icon">⌕</span>
+          <input class="address" id="address-bar" autocomplete="off" autocapitalize="off" autocorrect="off" placeholder="Search or enter a URL">
+          <button class="address-go" id="goBtn">↵</button>
+        </div>
+        <div class="top-actions">
+          <button class="nav-btn" id="openBtn">↗</button>
+        </div>
+      </div>
+
+      <div class="tabsbar" id="tabs-container"></div>
+
+      <section class="content">
+        <div class="newtab" id="newtab">
+          <div class="newtab-inner">
+            <div class="hero-mark">A</div>
+            <h1 class="hero-title">axiom</h1>
+            <p class="hero-copy">A faster, cleaner way to browse.</p>
+            <input class="home-search" id="home-search" placeholder="Search the web or enter a URL">
+            <div class="quick-grid">
+              <button class="quick" data-url="https://duckduckgo.com/"><div class="quick-icon">⌕</div><div class="quick-title">Search</div><div class="quick-desc">Browse the web</div></button>
+              <button class="quick" data-url="https://github.com/"><div class="quick-icon">◈</div><div class="quick-title">GitHub</div><div class="quick-desc">Projects & code</div></button>
+              <button class="quick" data-url="https://www.youtube.com/"><div class="quick-icon">▶</div><div class="quick-title">YouTube</div><div class="quick-desc">Watch videos</div></button>
+              <button class="quick" data-url="https://www.google.com/"><div class="quick-icon">G</div><div class="quick-title">Google</div><div class="quick-desc">Search anything</div></button>
+            </div>
+          </div>
+        </div>
+        <div class="frames" id="iframe-container"></div>
+        <div class="status">AXIOM • READY</div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script>
+
     const { ScramjetController } = $scramjetLoadController();
     
     const scramjet = new ScramjetController({
@@ -501,30 +467,117 @@
       return activeTab.frame.go(url);
     }
 
-    window.addEventListener("load", async () => {
-      const root = document.getElementById("app");
-      root.innerHTML = `
-        <div class="browser-container">
-          <div style="position:absolute;left:14px;top:2px;font-weight:800;font-size:.68rem;letter-spacing:.16em;color:#8b6cff;opacity:.8;pointer-events:none;z-index:5;">AXIOM</div>
-          <div class="flex tabs" id="tabs-container"></div>
-          <div class="flex nav">
-            <button onclick="getActiveTab()?.frame.back()">←</button>
-            <button onclick="getActiveTab()?.frame.forward()">→</button>
-            <button onclick="getActiveTab()?.frame.reload()">↻</button>
-            <input class="bar" id="address-bar" autocomplete="off" autocapitalize="off" autocorrect="off" 
-              onkeyup="event.keyCode === 13 && handleSubmit()">
-            <button onclick="window.open(scramjet.encodeUrl(getActiveTab()?.url))">↗</button>
-            <p class="version"><b></b></p>
-          </div>
-          <div class="iframe-container" id="iframe-container"></div>
-        </div>
-      `;
+    
+window.addEventListener("load", async () => {
+  scramjet.init();
+  try { navigator.serviceWorker.register("./sw.js"); } catch(e) {}
 
-      const initialTab = createTab();
-      document.getElementById("iframe-container").appendChild(initialTab.frame.frame);
-      switchTab(initialTab.id);
-      updateTabsUI();
+  const connection = new BareMux.BareMuxConnection("/baremux/worker.js");
+  const store = {
+    url:"https://",
+    wispurl:localStorage.getItem("proxServer") || "wss://gointospace.app/wisp/",
+    bareurl:_CONFIG?.bareurl || (location.protocol==="https:"?"https":"http")+"://"+location.host+"/bare/",
+    proxy:""
+  };
+  connection.setTransport("/epoxy/index.mjs", [{wisp:store.wispurl}]);
+
+  let tabs=[],activeTabId=1,nextTabId=2,sortableInstance=null;
+
+  function getFaviconUrl(url){
+    try{
+      const domain=new URL(url).origin;
+      return `https://t0.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=${encodeURIComponent(domain)}`;
+    }catch{
+      return `https://t0.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=${encodeURIComponent(url)}`;
+    }
+  }
+
+  function createTab(){
+    const frame=scramjet.createFrame();
+    const tab={id:nextTabId++,title:"New Tab",url:"https://start.duckduckgo.com/",frame,favicon:getFaviconUrl("https://start.duckduckgo.com")};
+    frame.frame.src="/page/newtab.html";
+    frame.addEventListener("urlchange",e=>{
+      if(!e.url)return;
+      tab.url=e.url;tab.favicon=getFaviconUrl(e.url);
+      try{tab.title=frame.frame.contentWindow?.document?.title||new URL(e.url).hostname}catch{tab.title=new URL(e.url).hostname}
+      updateTabsUI();updateAddressBar();
+      document.getElementById("newtab").style.display="none";
     });
+    tabs.push(tab);return tab;
+  }
+  function getActiveTab(){return tabs.find(t=>t.id===activeTabId)}
+  function switchTab(id){
+    tabs.forEach(t=>t.frame.frame.classList.add("hidden"));
+    activeTabId=id;
+    const t=getActiveTab();
+    if(t){
+      t.frame.frame.classList.remove("hidden");
+      document.getElementById("newtab").style.display=t.title==="New Tab"?"flex":"none";
+    }
+    updateTabsUI();updateAddressBar();
+  }
+  function closeTab(id){
+    const i=tabs.findIndex(t=>t.id===id);if(i<0)return;
+    if(tabs.length===1){
+      const nt=createTab();
+      document.getElementById("iframe-container").appendChild(nt.frame.frame);
+      activeTabId=nt.id;
+    }
+    const t=tabs[i];
+    if(t.frame.frame.parentNode)t.frame.frame.parentNode.removeChild(t.frame.frame);
+    tabs.splice(i,1);
+    if(activeTabId===id&&tabs.length)activeTabId=tabs[Math.min(i,tabs.length-1)].id;
+    switchTab(activeTabId);
+  }
+  function updateTabsUI(){
+    const c=document.getElementById("tabs-container");c.innerHTML="";
+    tabs.forEach(tab=>{
+      const el=document.createElement("div");el.className="tab "+(tab.id===activeTabId?"active":"");
+      el.onclick=()=>switchTab(tab.id);
+      const img=document.createElement("img");img.className="tab-favicon";img.src=tab.favicon;img.onerror=()=>img.style.display="none";
+      const title=document.createElement("span");title.className="tab-title";title.textContent=tab.title;
+      const close=document.createElement("button");close.className="tab-close";close.textContent="×";close.onclick=e=>{e.stopPropagation();closeTab(tab.id)};
+      el.append(img,title,close);c.appendChild(el);
+    });
+    const b=document.createElement("button");b.className="new-tab-btn";b.textContent="+";
+    b.onclick=()=>{const t=createTab();document.getElementById("iframe-container").appendChild(t.frame.frame);switchTab(t.id)};
+    c.appendChild(b);
+    if(sortableInstance)sortableInstance.destroy();
+    sortableInstance=new Sortable(c,{animation:160,direction:"horizontal",filter:".new-tab-btn",
+      onEnd:e=>{if(e.oldIndex!==e.newIndex){const m=tabs.splice(e.oldIndex,1)[0];tabs.splice(e.newIndex,0,m)}}});
+  }
+  function updateAddressBar(){const t=getActiveTab();document.getElementById("address-bar").value=t?t.url:""}
+  function handleSubmit(value){
+    const t=getActiveTab();if(!t)return;
+    let url=(value||"").trim();
+    if(!url.startsWith("http")&&!url.includes("."))url="https://duckduckgo.com/?q="+encodeURIComponent(url);
+    else if(!url.startsWith("http"))url="https://"+url;
+    t.url=url;t.favicon=getFaviconUrl(url);t.title=new URL(url).hostname;
+    document.getElementById("newtab").style.display="none";
+    t.frame.go(url);updateTabsUI();updateAddressBar();
+  }
+
+  document.getElementById("address-bar").addEventListener("keydown",e=>{if(e.key==="Enter")handleSubmit(e.target.value)});
+  document.getElementById("goBtn").onclick=()=>handleSubmit(document.getElementById("address-bar").value);
+  document.getElementById("home-search").addEventListener("keydown",e=>{if(e.key==="Enter")handleSubmit(e.target.value)});
+  document.querySelectorAll(".quick").forEach(b=>b.onclick=()=>handleSubmit(b.dataset.url));
+  document.getElementById("backBtn").onclick=()=>getActiveTab()?.frame.back();
+  document.getElementById("forwardBtn").onclick=()=>getActiveTab()?.frame.forward();
+  document.getElementById("reloadBtn").onclick=()=>getActiveTab()?.frame.reload();
+  document.getElementById("openBtn").onclick=()=>{const t=getActiveTab();if(t)window.open(scramjet.encodeUrl(t.url))};
+
+  document.querySelectorAll(".side-btn").forEach((b,i)=>{
+    b.onclick=()=>{
+      document.querySelectorAll(".side-btn").forEach(x=>x.classList.remove("active"));
+      b.classList.add("active");
+      if(i===0)document.getElementById("newtab").style.display="flex";
+      if(i===3){const t=createTab();document.getElementById("iframe-container").appendChild(t.frame.frame);switchTab(t.id)}
+    };
+  });
+
+  const initial=createTab();
+  document.getElementById("iframe-container").appendChild(initial.frame.frame);
+  switchTab(initial.id);updateTabsUI();
+});
+
   </script>
-</body>
-</html>
