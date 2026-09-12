@@ -236,7 +236,7 @@ button{border:0}
             <div class="quick-grid">
               <button class="quick" data-url="https://duckduckgo.com/"><div class="quick-icon">⌕</div><div class="quick-title">Search</div><div class="quick-desc">Browse the web</div></button>
               <button class="quick" data-url="https://github.com/"><div class="quick-icon">◈</div><div class="quick-title">GitHub</div><div class="quick-desc">Projects & code</div></button>
-              <button class="quick" data-url="https://www.youtube.com/results?search_query=YouTube"><div class="quick-icon">▶</div><div class="quick-title">YouTube</div><div class="quick-desc">Watch videos</div></button>
+              <button class="quick" data-url="https://www.youtube.com/"><div class="quick-icon">▶</div><div class="quick-title">YouTube</div><div class="quick-desc">Watch videos</div></button>
               <button class="quick" data-url="https://www.google.com/"><div class="quick-icon">G</div><div class="quick-title">Google</div><div class="quick-desc">Search anything</div></button>
             </div>
           </div>
@@ -547,53 +547,14 @@ window.addEventListener("load", async () => {
       onEnd:e=>{if(e.oldIndex!==e.newIndex){const m=tabs.splice(e.oldIndex,1)[0];tabs.splice(e.newIndex,0,m)}}});
   }
   function updateAddressBar(){const t=getActiveTab();document.getElementById("address-bar").value=t?t.url:""}
-  function normalizeUrl(value){
-    let url=(value||"").trim();
-    if(!url) return null;
-
-    // Search terms go to DuckDuckGo.
-    if(!url.startsWith("http")&&!url.includes("."))
-      return "https://duckduckgo.com/?q="+encodeURIComponent(url);
-
-    if(!url.startsWith("http")) url="https://"+url;
-
-    // Normalize common YouTube shortcuts.
-    try{
-      const u=new URL(url);
-      if(u.hostname==="youtu.be"){
-        return "https://www.youtube.com/watch?v="+u.pathname.slice(1);
-      }
-      if(u.hostname==="youtube-nocookie.com")
-        return "https://www.youtube.com"+u.pathname+u.search;
-    }catch(e){}
-
-    return url;
-  }
-
-  function navigateTab(t,url){
-    if(!t||!url)return;
-    t.url=url;
-    t.favicon=getFaviconUrl(url);
-    try{t.title=new URL(url).hostname}catch{t.title="Axiom"};
-    document.getElementById("newtab").style.display="none";
-
-    // Always send navigation through Scramjet. This is important for
-    // YouTube because a plain iframe is commonly blocked by frame policies.
-    try{
-      t.frame.go(url);
-    }catch(e){
-      // Retry through the encoded Scramjet URL if the frame API rejects it.
-      try{t.frame.frame.src=scramjet.encodeUrl(url)}catch(_){}
-    }
-
-    updateTabsUI();
-    updateAddressBar();
-  }
-
   function handleSubmit(value){
-    const t=getActiveTab();
-    if(!t)return;
-    navigateTab(t,normalizeUrl(value));
+    const t=getActiveTab();if(!t)return;
+    let url=(value||"").trim();
+    if(!url.startsWith("http")&&!url.includes("."))url="https://duckduckgo.com/?q="+encodeURIComponent(url);
+    else if(!url.startsWith("http"))url="https://"+url;
+    t.url=url;t.favicon=getFaviconUrl(url);t.title=new URL(url).hostname;
+    document.getElementById("newtab").style.display="none";
+    t.frame.go(url);updateTabsUI();updateAddressBar();
   }
 
   document.getElementById("address-bar").addEventListener("keydown",e=>{if(e.key==="Enter")handleSubmit(e.target.value)});
@@ -604,18 +565,6 @@ window.addEventListener("load", async () => {
   document.getElementById("forwardBtn").onclick=()=>getActiveTab()?.frame.forward();
   document.getElementById("reloadBtn").onclick=()=>getActiveTab()?.frame.reload();
   document.getElementById("openBtn").onclick=()=>{const t=getActiveTab();if(t)window.open(scramjet.encodeUrl(t.url))};
-
-  // YouTube sometimes needs a second navigation after the Scramjet frame
-  // has initialized. Retry only for YouTube, without affecting other sites.
-  document.getElementById("iframe-container").addEventListener("load",()=>{
-    const t=getActiveTab();
-    if(!t||!/youtube\.com|youtu\.be/i.test(t.url))return;
-    setTimeout(()=>{
-      try{
-        if(t.frame && t.frame.go) t.frame.go(t.url);
-      }catch(e){}
-    },350);
-  });
 
   document.querySelectorAll(".side-btn").forEach((b,i)=>{
     b.onclick=()=>{
