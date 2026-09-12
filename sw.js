@@ -12,7 +12,7 @@ if (navigator.userAgent.includes("Firefox")) {
 }
 
 // pull in scramjet core (service worker helper) #FUCK SCERAM ONG
-importScripts("/media/archive/Simple-Scramjet-proxy-static-HTML-.zip/Simple-Scramjet-proxy-static-HTML--main/scram/scramjet.all.js");
+importScripts("/scram/scramjet.all.js");
 
 const { ScramjetServiceWorker } = $scramjetLoadWorker();
 const scramjet = new ScramjetServiceWorker();
