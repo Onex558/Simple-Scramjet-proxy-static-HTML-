@@ -10,6 +10,9 @@
     gtag('js', new Date());
     gtag('config', 'G-SWJ0G7WQW4');
   </script>
+  <!-- Google AdSense -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8831997570696570"
+     crossorigin="anonymous"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Axiom</title>
@@ -288,6 +291,22 @@ body.rail-pos-bottom #railExpandBtn{ left:14px; right:auto; bottom:14px; }
   text-align: center; z-index: 5;
   font-size: 0.72em; color: rgba(255,255,255,0.18);
   letter-spacing: 0.08em; text-transform: uppercase;
+}
+
+/* ===== CENTER ADSENSE ===== */
+.ad-center-wrap{
+  width: min(728px, 92vw);
+  margin: 28px auto 0;
+  min-height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.ad-center-wrap ins.adsbygoogle{
+  width: 100%;
+  display: block;
 }
 #mainTitle{ position:absolute; left:-9999px; }
 
@@ -1082,6 +1101,20 @@ body.has-wallpaper::before{ opacity:0.5; }
   <div class="proxy-search-wrap">
     <input type="text" id="homeProxyInput" placeholder="Type a URL or search the web..." autocomplete="off" spellcheck="false">
   </div>
+
+  <div class="ad-center-wrap" aria-label="Advertisement">
+    <!-- Replace 1234567890 with your real AdSense ad unit slot ID -->
+    <ins class="adsbygoogle"
+         style="display:block; text-align:center;"
+         data-ad-client="ca-pub-8831997570696570"
+         data-ad-slot="1234567890"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>
+      (adsbygoogle = window.adsbygoogle || []).push({});
+    </script>
+  </div>
+
 </section>
 
 <!-- GAMES LIBRARY -->
