@@ -22,7 +22,7 @@
     });
   </script>
 
-  <!-- Profitablerate CPM Network Ads -->
+  <!-- Profitablerate: Popunder_1 + SocialBar_1 (zone scripts) -->
   <script src="https://pl31430973.profitableratecpmnetwork.com/8c/55/36/8c5536c5ab9bbc45faee5314e8557e6c.js"></script>
   <script src="https://pl31430955.profitableratecpmnetwork.com/b9/eb/17/b9eb171945b6c5d5ebc134f914cb7b8c.js"></script>
 
@@ -919,6 +919,33 @@ body.rail-pos-bottom #railExpandBtn{ left:14px; right:auto; bottom:14px; }
 }
 #achToast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
 
+
+/* ===== SOCIAL BAR (bottom) ===== */
+#axiomSocialBar{
+  position:fixed; left:0; right:0; bottom:0; z-index:12000;
+  min-height:0; max-height:90px;
+  display:flex; align-items:center; justify-content:center;
+  pointer-events:auto;
+  background:transparent;
+}
+#axiomSocialBar:empty{ display:none; }
+body.has-social-bar #viewHome,
+body.has-social-bar #viewGames,
+body.has-social-bar #viewChat{
+  padding-bottom: 100px;
+}
+@media(max-width:700px){
+  body.has-social-bar .rail{ bottom: 72px; }
+  body.has-social-bar #railExpandBtn{ bottom: 148px; }
+}
+
+/* Banner 160x300 inside interstitial */
+.game-ad-slot.banner-160x300{
+  width:160px; min-height:300px; height:300px; margin:0 auto;
+  border-style:solid; border-color:rgba(var(--primary-rgb),0.25);
+}
+.game-ad-card.banner-mode{ width:min(220px,92%); }
+
 /* ===== GAME INTERSTITIAL ADS (every ~60s while playing) ===== */
 #gameAdOverlay{
   display:none; position:absolute; inset:0; z-index:50;
@@ -1278,10 +1305,10 @@ body.has-wallpaper::before{ opacity:0.5; }
 
  <!-- Interstitial ad shown ~every 60s while a game is open -->
  <div id="gameAdOverlay" aria-hidden="true">
-  <div class="game-ad-card">
+  <div class="game-ad-card banner-mode">
    <h3>Sponsored</h3>
-   <div class="game-ad-slot" id="gameAdSlot">
-     <span style="color:rgba(255,255,255,0.35);font-size:0.85em;">Loading ad…</span>
+   <div class="game-ad-slot banner-160x300" id="gameAdSlot">
+     <span style="color:rgba(255,255,255,0.35);font-size:0.8em;padding:12px;">Banner 160×300</span>
    </div>
    <button type="button" class="game-ad-skip" id="gameAdSkipBtn" disabled>Skip in 5…</button>
    <p class="game-ad-hint">Ads help keep Axiom free</p>
@@ -2818,7 +2845,11 @@ function openInAboutBlankWindow(title, htmlOrUrl, isHtml) {
  (title || 'Game').replace(/</g, '&lt;') +
  '</title></head><body style="margin:0;background:#000;"><iframe src="' +
  String(htmlOrUrl).replace(/"/g, '&quot;') +
- '" style="border:0;width:100vw;height:100vh;" allowfullscreen></iframe></body></html>'
+ '" style="border:0;width:100vw;height:100vh;" allowfullscreen></iframe>
+<!-- Social Bar unit (SocialBar_1) -->
+<div id="axiomSocialBar" aria-label="Sponsored"></div>
+
+</body></html>'
  );
  }
  win.document.close();
@@ -4497,26 +4528,53 @@ setInterval(updateClock, 1000);
   function fillAdSlot() {
     const slot = document.getElementById('gameAdSlot');
     if (!slot) return;
-    // Clear previous content
     slot.innerHTML = '';
-    // Prefer AdSense auto if available; otherwise show network notice + keep external scripts active
+
+    // Banner 160x300 — highrevenueformat unit
     try {
-      if (window.adsbygoogle) {
-        const ins = document.createElement('ins');
-        ins.className = 'adsbygoogle';
-        ins.style.display = 'block';
-        ins.style.width = '100%';
-        ins.style.minHeight = '250px';
-        ins.setAttribute('data-ad-client', 'ca-pub-7742519907624481');
-        ins.setAttribute('data-ad-format', 'auto');
-        ins.setAttribute('data-full-width-responsive', 'true');
-        slot.appendChild(ins);
-        (adsbygoogle = window.adsbygoogle || []).push({});
-        return;
-      }
+      window.atOptions = {
+        key: 'a297d9167357ffa94cd24bd3cf872df2',
+        format: 'iframe',
+        height: 300,
+        width: 160,
+        params: {}
+      };
     } catch (_) {}
-    slot.innerHTML = '<div style="padding:24px;color:rgba(255,255,255,0.55);font-size:0.9em;line-height:1.5;">Ad network loaded.<br>If nothing appears, your domain may still be under review or an ad blocker is on.</div>';
+
+    // Container the network script can target
+    const holder = document.createElement('div');
+    holder.id = 'container-a297d9167357ffa94cd24bd3cf872df2';
+    holder.style.width = '160px';
+    holder.style.height = '300px';
+    holder.style.margin = '0 auto';
+    slot.appendChild(holder);
+
+    // Inline atOptions script
+    const s1 = document.createElement('script');
+    s1.type = 'text/javascript';
+    s1.text = "atOptions = { 'key':'a297d9167357ffa94cd24bd3cf872df2', 'format':'iframe', 'height':300, 'width':160, 'params':{} };";
+    slot.appendChild(s1);
+
+    // Invoke script (cache-bust so repeat interstitials can reload)
+    const s2 = document.createElement('script');
+    s2.type = 'text/javascript';
+    s2.src = 'https://www.highrevenueformat.com/a297d9167357ffa94cd24bd3cf872df2/invoke.js?t=' + Date.now();
+    s2.async = true;
+    s2.onerror = function () {
+      if (!slot.querySelector('iframe')) {
+        const note = document.createElement('div');
+        note.style.cssText = 'padding:16px;color:rgba(255,255,255,0.5);font-size:0.78em;line-height:1.45;text-align:center;';
+        note.innerHTML = 'Banner 160×300<br><br>Blocked or not approved yet.<br>Turn off adblock & use a live domain.';
+        slot.appendChild(note);
+      }
+    };
+    slot.appendChild(s2);
   }
+  // Social bar container marker (network social-bar script may inject into page bottom)
+  try {
+    document.body.classList.add('has-social-bar');
+  } catch (_) {}
+
 
   function showGameAd() {
     if (!isGamePlaying()) return;
