@@ -2,6 +2,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- Google Analytics 4 -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-SWJ0G7WQW4"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-SWJ0G7WQW4');
+  </script>
+
   <!-- Google AdSense -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7742519907624481"
      crossorigin="anonymous"></script>
@@ -1034,7 +1043,7 @@ body.has-wallpaper::before{ opacity:0.5; }
   <button type="button" class="rail-btn active" data-view="home" id="railHome">Home</button>
   <button type="button" class="rail-btn" data-view="games" id="railGames">Games</button>
   <button type="button" class="rail-btn" id="railProxyBtn" onclick="openProxy()">Browser</button>
-  <button type="button" class="rail-btn" id="railLinksBtn" onclick="window.open('https://sites.google.com/view/allabouturanium', '_blank', 'noopener,noreferrer')"><svg class="rail-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Links</button>
+  <button type="button" class="rail-btn" id="railLinksBtn" onclick="window.open('https://sites..com/view/allabouturanium', '_blank', 'noopener,noreferrer')"><svg class="rail-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Links</button>
 
   <button type="button" class="rail-btn rail-group-btn" data-group="mediaGroup" aria-expanded="false">Media<span class="chevron">&#10095;</span></button>
   <div class="rail-group" id="mediaGroup">
@@ -1296,7 +1305,7 @@ body.has-wallpaper::before{ opacity:0.5; }
  <!-- PANIC KEY FEATURE -->
  <div class="settings-group">
  <label>Panic Key Target URL</label>
- <input type="text" id="setPanicUrl" placeholder="https://classroom.google.com" value="https://www.google.com">
+ <input type="text" id="setPanicUrl" placeholder="https://classroom..com" value="https://www..com">
  <p style="font-size:0.78em;color:rgba(255,255,255,0.45);margin-top:6px;line-height:1.45;">
  <strong>`</strong> (backtick) -> go to this site<br>
  <strong>Double-tap `</strong> -> open in a new tab<br>
@@ -1393,14 +1402,14 @@ body.has-wallpaper::before{ opacity:0.5; }
  <option value="ClassLink | My Apps">ClassLink</option>
  <option value="Clever | Portal">Clever</option>
  <option value="Canvas">Canvas</option>
- <option value="Google Classroom">Google Classroom</option>
- <option value="Google Docs">Google Docs</option>
- <option value="Google Slides">Google Slides</option>
- <option value="Google Drive">Google Drive</option>
+ <option value=" Classroom"> Classroom</option>
+ <option value=" Docs"> Docs</option>
+ <option value=" Slides"> Slides</option>
+ <option value=" Drive"> Drive</option>
  <option value="custom">Custom (title + photo below)</option>
  </select>
  <label style="margin-top:10px;">Custom Tab Title</label>
- <input type="text" id="setCloakTitle" placeholder="e.g. Google Classroom" value="">
+ <input type="text" id="setCloakTitle" placeholder="e.g.  Classroom" value="">
  <label style="margin-top:10px;">Custom Favicon URL (photo from web)</label>
  <input type="text" id="setCloakIcon" placeholder="https://example.com/icon.png" value="">
  <p style="font-size:0.75em;color:rgba(255,255,255,0.4);margin-top:6px;line-height:1.4;">
@@ -1451,7 +1460,7 @@ const DEFAULTS = {
  cloakIcon: '',
  openAboutBlank: false,
  wallpaper: 'none',
- panicUrl: 'https://www.google.com',
+ panicUrl: 'https://www..com',
  homeWallpaper: '',
  confirmOnClose: true,
  confirmTabClose: false,
@@ -1795,7 +1804,7 @@ const customGames = [
  { name:"Moto x3m", author:"Unknown", resolvedCover:"https://cdn.jsdelivr.net/gh/Onex558/uranium-source-@main/images/images%20(55).jpeg", resolvedUrl:"https://cdn.jsdelivr.net/gh/Onex558/Ultimate-games-stash-games-@main/offline/motox3m.html" },
  { name:"Moto x3m 2", author:"Unknown", resolvedCover:"https://cdn.jsdelivr.net/gh/Onex558/uranium-source-@main/images/images%20(56).jpeg", resolvedUrl:"https://cdn.jsdelivr.net/gh/Onex558/Ultimate-games-stash-games-@main/UGS-Files/clmotox3m2.html" },
  { name:"Moto x3m Winter", author:"Unknown", resolvedCover:"https://cdn.jsdelivr.net/gh/Onex558/uranium-source-@main/images/moto-x3m-4-winter-logo.jpeg", resolvedUrl:"https://cdn.jsdelivr.net/gh/Onex558/Ultimate-games-stash-games-@main/offline/motox3mwinter.html" },
- { name:"Google Dino Game", author:"Unknown", resolvedCover:"https://cdn.jsdelivr.net/gh/Onex558/uranium-source-@main/images/unnamed%20(1).png", resolvedUrl:"https://cdn.jsdelivr.net/gh/Onex558/Ultimate-games-stash-games-@main/UGS-Files/clgoogledino.html" },
+ { name:" Dino Game", author:"Unknown", resolvedCover:"https://cdn.jsdelivr.net/gh/Onex558/uranium-source-@main/images/unnamed%20(1).png", resolvedUrl:"https://cdn.jsdelivr.net/gh/Onex558/Ultimate-games-stash-games-@main/UGS-Files/cldino.html" },
  { name:"Pac Man", author:"Unknown", resolvedCover:"https://cdn.jsdelivr.net/gh/Onex558/uranium-source-@main/images/images%20(2).png", resolvedUrl:"https://cdn.jsdelivr.net/gh/Onex558/Ultimate-games-stash-games-@main/offline/pacman.html" },
  { name:"Parking fury", author:"Unknown", resolvedCover:"https://cdn.jsdelivr.net/gh/Onex558/uranium-source-@main/images/images%20(57).jpeg", resolvedUrl:"https://cdn.jsdelivr.net/gh/Onex558/Ultimate-games-stash-games-@main/offline/parkingfury.html" },
  { name:"Fruit Ninja", author:"Unknown", resolvedCover:"https://cdn.jsdelivr.net/gh/Onex558/uranium-source-@main/images/images%20(58).jpeg", resolvedUrl:"https://cdn.jsdelivr.net/gh/Onex558/Ultimate-games-stash-games-@main/offline/fruitninja.html" },
@@ -1815,8 +1824,8 @@ function saveSettings() {
 
 /* ========== IMPROVED TAB CLOAKING ========== */
 const CLOAK_PROFILES = [
- { title: "Google Slides", icon: "S" },
- { title: "Google Docs", icon: "D" },
+ { title: " Slides", icon: "S" },
+ { title: " Docs", icon: "D" },
  { title: "Google Drive", icon: "G" },
  { title: "Google Classroom", icon: "C" },
  { title: "Classroom", icon: "C" },
@@ -4637,7 +4646,7 @@ window.addEventListener('load', () => {
       <div class="proxy-warning-card">
         <button type="button" class="proxy-warning-close" id="proxyAnnouncementClose" aria-label="Close announcement">&times;</button>
         <h2 id="proxyAnnouncementTitle">Your proxy isnt working on .b-cdn.net</h2>
-        <p>Try one of these links instead:</p>
+        <p>If you are on a Google Script or SVG link, this may not work.</p>
         <div class="proxy-warning-links">
           <a class="proxy-warning-link" href="https://axiom-22e53.kxcdn.com/" target="_blank" rel="noopener noreferrer">https://axiom-22e53.kxcdn.com/</a>
           <a class="proxy-warning-link" href="https://script.google.com/macros/s/AKfycbx9ngwHMHQiIFwpbvnjzVXYnUscWyX0DrO7y6P6DZAT_52IhzT_71Ei_apczy79B6fC/exec?id=CM0" target="_blank" rel="noopener noreferrer">https://script.google.com/macros/s/AKfycbx9ngwHMHQiIFwpbvnjzVXYnUscWyX0DrO7y6P6DZAT_52IhzT_71Ei_apczy79B6fC/exec?id=CM0</a>
