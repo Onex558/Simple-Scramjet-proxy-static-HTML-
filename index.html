@@ -918,6 +918,39 @@ body.rail-pos-bottom #railExpandBtn{ left:14px; right:auto; bottom:14px; }
   font-weight:700; opacity:0; pointer-events:none; transition:opacity .25s, transform .25s;
 }
 #achToast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* ===== GAME INTERSTITIAL ADS (every ~60s while playing) ===== */
+#gameAdOverlay{
+  display:none; position:absolute; inset:0; z-index:50;
+  background:rgba(0,0,0,0.82); backdrop-filter:blur(8px);
+  align-items:center; justify-content:center; flex-direction:column; gap:14px;
+  padding:20px;
+}
+#gameAdOverlay.show{ display:flex; }
+.game-ad-card{
+  width:min(420px,92%); max-height:min(70vh,520px);
+  background:rgba(12,12,20,0.98); border:1px solid rgba(var(--primary-rgb),0.35);
+  border-radius:16px; padding:18px 16px 14px; text-align:center;
+  box-shadow:0 20px 60px rgba(0,0,0,0.55);
+  display:flex; flex-direction:column; gap:12px;
+}
+.game-ad-card h3{ margin:0; font-size:1em; color:var(--primary); letter-spacing:0.04em; text-transform:uppercase; }
+.game-ad-slot{
+  min-height:250px; width:100%; border-radius:12px;
+  background:rgba(255,255,255,0.03); border:1px dashed rgba(255,255,255,0.12);
+  display:flex; align-items:center; justify-content:center; overflow:hidden;
+  position:relative;
+}
+.game-ad-slot iframe{ width:100%; height:280px; border:0; border-radius:10px; background:#111; }
+.game-ad-skip{
+  margin:0 auto; padding:10px 18px; border-radius:999px; cursor:pointer;
+  border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.08);
+  color:#fff; font-family:inherit; font-weight:700; font-size:0.85em;
+}
+.game-ad-skip:hover{ background:rgba(var(--primary-rgb),0.25); border-color:rgba(var(--primary-rgb),0.5); }
+.game-ad-skip:disabled{ opacity:0.45; cursor:default; }
+.game-ad-hint{ font-size:0.72em; color:var(--muted); margin:0; }
+
 .floating-particles{ position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden; }
 .particle{
   position:absolute; width:2px; height:2px; background:var(--primary);
@@ -1241,6 +1274,18 @@ body.has-wallpaper::before{ opacity:0.5; }
  <div id="modalError">
  <div id="modalErrorTitle" style="font-size:1.25em;font-weight:700;color:#fff;"></div>
  <div id="modalErrorReason" style="font-size:0.9em;color:rgba(255,255,255,0.6);"></div>
+ </div>
+
+ <!-- Interstitial ad shown ~every 60s while a game is open -->
+ <div id="gameAdOverlay" aria-hidden="true">
+  <div class="game-ad-card">
+   <h3>Sponsored</h3>
+   <div class="game-ad-slot" id="gameAdSlot">
+     <span style="color:rgba(255,255,255,0.35);font-size:0.85em;">Loading ad…</span>
+   </div>
+   <button type="button" class="game-ad-skip" id="gameAdSkipBtn" disabled>Skip in 5…</button>
+   <p class="game-ad-hint">Ads help keep Axiom free</p>
+  </div>
  </div>
 </div>
 
@@ -3471,6 +3516,8 @@ function prepareGameModal(name) {
   showModalChrome();
   clearTimeout(modalChromeHideTimer);
   modalChromeHideTimer = setTimeout(hideModalChrome, 1800);
+  try { if (typeof window.__axiomScheduleFirstAd === 'function') window.__axiomScheduleFirstAd(); } catch (_) {}
+  try { if (typeof window.__axiomStartGameAds === 'function') window.__axiomStartGameAds(); } catch (_) {}
 }
 
 /** Proxy path for hosts that block iframes */
@@ -4416,6 +4463,157 @@ maybeAutoAboutBlank();
 showView('home');
 updateClock();
 setInterval(updateClock, 1000);
+
+
+
+/* ========== GAME MODAL INTERSTITIAL ADS (every 60s) ========== */
+(function () {
+  const AD_INTERVAL_MS = 60 * 1000;   // every 1 minute
+  const SKIP_DELAY_MS = 5000;         // must wait 5s before skip
+  let adTimer = null;
+  let skipTimer = null;
+  let skipCountdown = null;
+
+  function isGamePlaying() {
+    const m = document.getElementById('gameModal');
+    if (!m || m.style.display !== 'flex' || !m.classList.contains('open')) return false;
+    if (m.classList.contains('music-minimized')) return false;
+    // skip pure browser proxy home with no content if you want; still show for games/proxy
+    return true;
+  }
+
+  function hideGameAd() {
+    const ov = document.getElementById('gameAdOverlay');
+    if (ov) {
+      ov.classList.remove('show');
+      ov.setAttribute('aria-hidden', 'true');
+    }
+    clearTimeout(skipTimer);
+    clearInterval(skipCountdown);
+    const btn = document.getElementById('gameAdSkipBtn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Skip in 5…'; }
+  }
+
+  function fillAdSlot() {
+    const slot = document.getElementById('gameAdSlot');
+    if (!slot) return;
+    // Clear previous content
+    slot.innerHTML = '';
+    // Prefer AdSense auto if available; otherwise show network notice + keep external scripts active
+    try {
+      if (window.adsbygoogle) {
+        const ins = document.createElement('ins');
+        ins.className = 'adsbygoogle';
+        ins.style.display = 'block';
+        ins.style.width = '100%';
+        ins.style.minHeight = '250px';
+        ins.setAttribute('data-ad-client', 'ca-pub-7742519907624481');
+        ins.setAttribute('data-ad-format', 'auto');
+        ins.setAttribute('data-full-width-responsive', 'true');
+        slot.appendChild(ins);
+        (adsbygoogle = window.adsbygoogle || []).push({});
+        return;
+      }
+    } catch (_) {}
+    slot.innerHTML = '<div style="padding:24px;color:rgba(255,255,255,0.55);font-size:0.9em;line-height:1.5;">Ad network loaded.<br>If nothing appears, your domain may still be under review or an ad blocker is on.</div>';
+  }
+
+  function showGameAd() {
+    if (!isGamePlaying()) return;
+    const ov = document.getElementById('gameAdOverlay');
+    const btn = document.getElementById('gameAdSkipBtn');
+    if (!ov) return;
+    fillAdSlot();
+    ov.classList.add('show');
+    ov.setAttribute('aria-hidden', 'false');
+    if (btn) {
+      btn.disabled = true;
+      let left = Math.ceil(SKIP_DELAY_MS / 1000);
+      btn.textContent = 'Skip in ' + left + '…';
+      clearInterval(skipCountdown);
+      skipCountdown = setInterval(() => {
+        left -= 1;
+        if (left <= 0) {
+          clearInterval(skipCountdown);
+          btn.disabled = false;
+          btn.textContent = 'Continue playing';
+        } else {
+          btn.textContent = 'Skip in ' + left + '…';
+        }
+      }, 1000);
+    }
+    clearTimeout(skipTimer);
+    skipTimer = setTimeout(() => {
+      if (btn) { btn.disabled = false; btn.textContent = 'Continue playing'; }
+    }, SKIP_DELAY_MS);
+  }
+
+  function startGameAdLoop() {
+    stopGameAdLoop();
+    adTimer = setInterval(() => {
+      if (isGamePlaying()) showGameAd();
+    }, AD_INTERVAL_MS);
+  }
+
+  function stopGameAdLoop() {
+    clearInterval(adTimer);
+    adTimer = null;
+    hideGameAd();
+  }
+
+  // Wire skip button
+  document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('gameAdSkipBtn');
+    if (btn) btn.addEventListener('click', () => {
+      if (!btn.disabled) hideGameAd();
+    });
+  });
+  // Also wire immediately in case DOM already ready
+  const btnNow = document.getElementById('gameAdSkipBtn');
+  if (btnNow) btnNow.addEventListener('click', () => {
+    if (!btnNow.disabled) hideGameAd();
+  });
+
+  // Hook into modal open/close
+  const _origPrepare = window.prepareGameModal;
+  // Observe style/display changes on gameModal
+  const modal = document.getElementById('gameModal');
+  if (modal) {
+    const obs = new MutationObserver(() => {
+      if (modal.style.display === 'flex' && modal.classList.contains('open')) {
+        startGameAdLoop();
+      } else {
+        stopGameAdLoop();
+      }
+    });
+    obs.observe(modal, { attributes: true, attributeFilter: ['style', 'class'] });
+  }
+
+  // Also start when openGame / openProxy paths open the modal
+  const _closeModal = window.closeModal;
+  // Patch after closeModal exists — poll briefly
+  let tries = 0;
+  const patchClose = setInterval(() => {
+    tries++;
+    if (typeof closeModal === 'function') {
+      const orig = closeModal;
+      window.closeModal = function () {
+        stopGameAdLoop();
+        return orig.apply(this, arguments);
+      };
+      // also expose helpers
+      window.__axiomShowGameAd = showGameAd;
+      window.__axiomStartGameAds = startGameAdLoop;
+      window.__axiomStopGameAds = stopGameAdLoop;
+      clearInterval(patchClose);
+    } else if (tries > 40) clearInterval(patchClose);
+  }, 250);
+
+  // First ad ~45s after opening a game (then every 60s)
+  window.__axiomScheduleFirstAd = function () {
+    setTimeout(() => { if (isGamePlaying()) showGameAd(); }, 45000);
+  };
+})();
 
 
 function axiomBootGames() {
