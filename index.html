@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -22,9 +21,7 @@
     });
   </script>
 
-  <!-- Profitablerate: Popunder_1 + SocialBar_1 (zone scripts) -->
-  <script src="https://pl31430973.profitableratecpmnetwork.com/8c/55/36/8c5536c5ab9bbc45faee5314e8557e6c.js"></script>
-  <script src="https://pl31430955.profitableratecpmnetwork.com/b9/eb/17/b9eb171945b6c5d5ebc134f914cb7b8c.js"></script>
+  <!-- Profitablerate scripts deferred until first game open (were blocking clicks) -->
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -463,6 +460,7 @@ body.rail-pos-bottom #railExpandBtn{ left:14px; right:auto; bottom:14px; }
 .src-badge.src-noah{ color:#a78bfa; }
 .src-badge.src-gnmath{ color:#7dd3fc; }
 .src-badge.src-truffled{ color:#fbbf24; }
+.src-badge.src-uranium{ color:#4ade80; }
 .play-overlay{
   position:absolute; inset:0; z-index:3;
   display:flex; align-items:center; justify-content:center;
@@ -922,13 +920,15 @@ body.rail-pos-bottom #railExpandBtn{ left:14px; right:auto; bottom:14px; }
 
 /* ===== SOCIAL BAR (bottom) ===== */
 #axiomSocialBar{
-  position:fixed; left:0; right:0; bottom:0; z-index:12000;
+  position:fixed; left:0; right:0; bottom:0; z-index:90;
   min-height:0; max-height:90px;
-  display:flex; align-items:center; justify-content:center;
-  pointer-events:auto;
+  display:none;
+  align-items:center; justify-content:center;
+  pointer-events:none;
   background:transparent;
 }
-#axiomSocialBar:empty{ display:none; }
+#axiomSocialBar:not(:empty){ display:flex; pointer-events:auto; }
+#axiomSocialBar:empty{ display:none !important; pointer-events:none !important; }
 body.has-social-bar #viewHome,
 body.has-social-bar #viewGames,
 body.has-social-bar #viewChat{
@@ -948,12 +948,12 @@ body.has-social-bar #viewChat{
 
 /* ===== GAME INTERSTITIAL ADS (every ~60s while playing) ===== */
 #gameAdOverlay{
-  display:none; position:absolute; inset:0; z-index:50;
+  display:none !important; position:absolute; inset:0; z-index:50;
   background:rgba(0,0,0,0.82); backdrop-filter:blur(8px);
   align-items:center; justify-content:center; flex-direction:column; gap:14px;
   padding:20px;
 }
-#gameAdOverlay.show{ display:flex; }
+#gameAdOverlay.show{ display:flex !important; }
 .game-ad-card{
   width:min(420px,92%); max-height:min(70vh,520px);
   background:rgba(12,12,20,0.98); border:1px solid rgba(var(--primary-rgb),0.35);
@@ -1182,12 +1182,7 @@ body.has-wallpaper::before{ opacity:0.5; }
           <button type="button" data-source="gnmath">GN Math</button>
           <button type="button" data-source="noah">Noah's Hub</button>
           <button type="button" data-source="truffled">Truffled</button>
-          <button type="button" data-source="kh0">3kh0 Lite</button>
-          <button type="button" data-source="nebula">Nebula CDN</button>
-          <button type="button" data-source="classplay">ClassPlay</button>
-          <button type="button" data-source="ubg98">UBG98</button>
-          <button type="button" data-source="cisco">Cisco</button>
-          <button type="button" data-source="ubg">Ubg</button>
+          <button type="button" data-source="uranium">Uranium</button>
         </div>
       </div>
     </div>
@@ -1726,6 +1721,93 @@ function setGamesReadyStatus() {
 }
 
 /* ========== EXTERNAL SOURCES (GN Math etc.) ========== */
+const uraniumGamesCatalog = [
+  { name: 'Super Mario Bros', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/Super_Mario_Bros._box.png', resolvedUrl: 'https://uranium.foo/semag/smb.html', needsProxy: true, source: 'uranium' },
+  { name: 'Portal', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/Portal_standalonebox.jpg', resolvedUrl: 'https://uranium.foo/semag/portal', needsProxy: true, source: 'uranium' },
+  { name: 'Sonic The Hedgehog', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/Sonic The Hedgehog (USA, Europe)-image.png', resolvedUrl: 'https://uranium.foo/semag/sth.html', needsProxy: true, source: 'uranium' },
+  { name: 'PaRappa The Rapper', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/PaRappa the Rapper - The Hip Hop Hero (Europe) (En,Fr,De,Es,It)-image.png', resolvedUrl: 'https://uranium.foo/semag/ptr.html', needsProxy: true, source: 'uranium' },
+  { name: 'Um Jammer Lammy', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/Um Jammer Lammy (Europe) (En,Fr,De,Es,It)-image.png', resolvedUrl: 'https://uranium.foo/semag/ujl.html', needsProxy: true, source: 'uranium' },
+  { name: 'Cookie Clicker', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/432bf350e866b2544f9a5cd80de83e0c24f4efddfd7811016c4aa33e48c5df7c.avif', resolvedUrl: 'https://uranium.foo/semag/cookieclicker.html', needsProxy: true, source: 'uranium' },
+  { name: 'Grand Theft Auto', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/Grand Theft Auto (Europe) (En,Fr,De,It) (EDC)-image.png', resolvedUrl: 'https://uranium.foo/semag/gta.html', needsProxy: true, source: 'uranium' },
+  { name: 'Grand Theft Auto 2', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/Grand Theft Auto 2 (Europe) (En,Fr,De,Es,It)-image.png', resolvedUrl: 'https://uranium.foo/semag/gta2.html', needsProxy: true, source: 'uranium' },
+  { name: 'Grand Theft Auto Advance', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/Grand Theft Auto Advance (USA)-image.png', resolvedUrl: 'https://uranium.foo/semag/gtaa.html', needsProxy: true, source: 'uranium' },
+  { name: 'Grand Theft Auto - Chinatown Wars', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/Grand Theft Auto - Chinatown Wars (USA) (En,Fr,De,Es,It)-image.png', resolvedUrl: 'https://uranium.foo/semag/gtachina.html', needsProxy: true, source: 'uranium' },
+  { name: 'Sonic The Hedgehog 2', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/Sonic The Hedgehog 2 (World) (Beta) (1992-08-21)-image.png', resolvedUrl: 'https://uranium.foo/semag/sth2.html', needsProxy: true, source: 'uranium' },
+  { name: 'Sonic The Hedgehog 3', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/Sonic The Hedgehog 3 (USA) (1993-11-20) (Sega Channel)-image.png', resolvedUrl: 'https://uranium.foo/semag/sth3.html', needsProxy: true, source: 'uranium' },
+  { name: 'Crazy Taxi: Catch a Ride', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/maxresdefault (13).jpg', resolvedUrl: 'https://uranium.foo/semag/crazytaxi.html', needsProxy: true, source: 'uranium' },
+  { name: 'Super Mario Bros 3', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/Super Mario Bros. 3 (USA) (Rev 1)-image.png', resolvedUrl: 'https://uranium.foo/semag/smb3.html', needsProxy: true, source: 'uranium' },
+  { name: 'Super Mario Bros 2', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/Super Mario Bros. 2 (USA) (Rev 1)-image.png', resolvedUrl: 'https://uranium.foo/semag/smb2.html', needsProxy: true, source: 'uranium' },
+  { name: 'Super Mario World', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/Super_Mario_World_Coverart.png', resolvedUrl: 'https://uranium.foo/semag/smw.html', needsProxy: true, source: 'uranium' },
+  { name: 'Doom 64', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/Doom_64_box.jpg', resolvedUrl: 'https://uranium.foo/semag/doom64.html', needsProxy: true, source: 'uranium' },
+  { name: 'Doom', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/1200.webp', resolvedUrl: 'https://uranium.foo/semag/doom.html', needsProxy: true, source: 'uranium' },
+  { name: 'Doom 2', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/ss_05f81f237a6370c3c797af951b42291dc747d199.1920x1080.jpg', resolvedUrl: 'https://uranium.foo/semag/doom2.html', needsProxy: true, source: 'uranium' },
+  { name: '2048', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/2048_OG-logo.jpg.jfif', resolvedUrl: 'https://uranium.foo/semag/2048.html', needsProxy: true, source: 'uranium' },
+  { name: '2048 Cupcakes', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/66b7c398c3d38a001ed2a2d2.jpg', resolvedUrl: 'https://uranium.foo/semag/2048cupcakes.html', needsProxy: true, source: 'uranium' },
+  { name: '900719925 4740992', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/9007199254740992.png', resolvedUrl: 'https://uranium.foo/semag/9007199254740992.html', needsProxy: true, source: 'uranium' },
+  { name: 'Bloons Tower Defense', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/71.png', resolvedUrl: 'https://uranium.foo/semag/bloonsTD1.html', needsProxy: true, source: 'uranium' },
+  { name: 'Bloons Tower Defense 2', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/72.png', resolvedUrl: 'https://uranium.foo/semag/bloonsTD2.html', needsProxy: true, source: 'uranium' },
+  { name: 'Bloons Tower Defense 3', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/73.png', resolvedUrl: 'https://uranium.foo/semag/bloonsTD3.html', needsProxy: true, source: 'uranium' },
+  { name: 'Bloons Tower Defense 4', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/74.png', resolvedUrl: 'https://uranium.foo/semag/bloonsTD4.html', needsProxy: true, source: 'uranium' },
+  { name: 'Bloons Tower Defense 5', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/75.png', resolvedUrl: 'https://uranium.foo/semag/bloonsTD5.html', needsProxy: true, source: 'uranium' },
+  { name: 'Grand Dad 7', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/Grand Dad 7 (Unl)-image.jpg', resolvedUrl: 'https://uranium.foo/semag/gd7.html', needsProxy: true, source: 'uranium' },
+  { name: 'Slime Rancher', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/591.png', resolvedUrl: 'https://uranium.foo/semag/sr.html', needsProxy: true, source: 'uranium' },
+  { name: 'Wolfenstein 3D', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/wolfenstein3d.png', resolvedUrl: 'https://uranium.foo/semag/wolfenstein3d.html', needsProxy: true, source: 'uranium' },
+  { name: 'Gran Turismo 2', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/61qihEdj+5L._AC_UF1000,1000_QL80_.jpg', resolvedUrl: 'https://uranium.foo/semag/gt2.html', needsProxy: true, source: 'uranium' },
+  { name: 'Scribblenauts', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/Scribblenauts_cover.jpg', resolvedUrl: 'https://uranium.foo/semag/scribblenauts.html', needsProxy: true, source: 'uranium' },
+  { name: 'Pac-Man', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/puckman-thumb.jpg', resolvedUrl: 'https://uranium.foo/semag/puckman.html', needsProxy: true, source: 'uranium' },
+  { name: 'Journey', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/journey-image.png', resolvedUrl: 'https://uranium.foo/semag/journey.html', needsProxy: true, source: 'uranium' },
+  { name: 'Ms Pac-Man', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/mspacman-thumb.png', resolvedUrl: 'https://uranium.foo/semag/mspacman.html', needsProxy: true, source: 'uranium' },
+  { name: 'Grand Theft Auto: Vice City Stories', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/gtavcs.jpg', resolvedUrl: 'https://uranium.foo/semag/gtavcs.html', needsProxy: true, source: 'uranium' },
+  { name: 'Super Mario 64', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/sm64.png', resolvedUrl: 'https://uranium.foo/semag/sm64/', needsProxy: true, source: 'uranium' },
+  { name: 'Crazy Taxi: Fare Wars', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/ctfarewars-1671296032460.webp', resolvedUrl: 'https://uranium.foo/semag/crazytaxifw.html', needsProxy: true, source: 'uranium' },
+  { name: 'The Spongebob Squarepants Movie', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/SpongeBob+SquarePants+Movie,+The+(USA)-image.jpg', resolvedUrl: 'https://uranium.foo/semag/tssm.html', needsProxy: true, source: 'uranium' },
+  { name: 'Battle For Bikini Bottom', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/SpongeBob+SquarePants+-+Battle+for+Bikini+Bottom+(USA)-image.jpg', resolvedUrl: 'https://uranium.foo/semag/bfbb.html', needsProxy: true, source: 'uranium' },
+  { name: 'Plants Vs. Zombies', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/Plants+vs.+Zombies+(USA)-image.jpg', resolvedUrl: 'https://uranium.foo/semag/pvz.html', needsProxy: true, source: 'uranium' },
+  { name: 'Doom 3', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/Doom3box.jpg', resolvedUrl: 'https://uranium.foo/semag/doom3/', needsProxy: true, source: 'uranium' },
+  { name: 'Celeste', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/623.png', resolvedUrl: 'https://uranium.foo/semag/celeste/', needsProxy: true, source: 'uranium' },
+  { name: 'Happy Wheels', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/624.png', resolvedUrl: 'https://uranium.foo/semag/happywheels.html', needsProxy: true, source: 'uranium' },
+  { name: 'Slope', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/slope-game-v1-f260x260.png', resolvedUrl: 'https://uranium.foo/semag/slope/', needsProxy: true, source: 'uranium' },
+  { name: 'Lego Star Wars: The Video Game', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/download.jfif', resolvedUrl: 'https://uranium.foo/semag/lsw.html', needsProxy: true, source: 'uranium' },
+  { name: 'Lego Star Wars II: The Original Trilogy', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/61XYZ0RHcOL._AC_UF1000,1000_QL80_.jpg', resolvedUrl: 'https://uranium.foo/semag/lsw2.html', needsProxy: true, source: 'uranium' },
+  { name: 'Stack', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/stack.png', resolvedUrl: 'https://uranium.foo/semag/stack/', needsProxy: true, source: 'uranium' },
+  { name: 'Rise Up', author: 'Uranium', resolvedCover: 'https://uranium.foo/images/rise.png', resolvedUrl: 'https://uranium.foo/semag/rise/', needsProxy: true, source: 'uranium' }
+];
+
+async function fetchUraniumSource() {
+  // Prefer live scrape of uranium.foo gamesData; fall back to embedded catalog
+  try {
+    const res = await fetch('https://uranium.foo/', { mode: 'cors', credentials: 'omit', cache: 'no-store' });
+    if (res.ok) {
+      const html = await res.text();
+      const m = html.match(/gamesData\s*=\s*(\[[\s\S]*?\])\s*;/);
+      if (m) {
+        const list = JSON.parse(m[1]);
+        if (Array.isArray(list) && list.length) {
+          return list.map(g => {
+            const title = g.title || g.name || 'Game';
+            const link = String(g.link || '').trim();
+            const image = String(g.image || '').trim();
+            const resolvedUrl = /^https?:\/\//i.test(link) ? link : ('https://uranium.foo/' + link.replace(/^\//, ''));
+            const resolvedCover = /^https?:\/\//i.test(image) ? image : (image ? ('https://uranium.foo/' + image.replace(/^\//, '')) : '');
+            return normalizeGameSource({
+              name: title,
+              author: 'Uranium',
+              resolvedCover,
+              resolvedUrl,
+              needsProxy: true,
+              source: 'uranium'
+            });
+          }).filter(g => g.name && /^https?:\/\//i.test(g.resolvedUrl));
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('[Axiom] Uranium live fetch failed, using catalog', e);
+  }
+  return (uraniumGamesCatalog || []).map(g => normalizeGameSource({ ...g, source: 'uranium', needsProxy: true }))
+    .filter(g => g.name && /^https?:\/\//i.test(g.resolvedUrl));
+}
+
 const externalSources = [
  {
  name: "GN Math Zone",
@@ -2114,6 +2196,7 @@ function createGameCard(game, i) {
      : src === 'ubg98' ? 'UBG98'
      : src === 'cisco' ? 'Cisco'
      : src === 'ubg' ? 'Ubg'
+     : src === 'uranium' ? 'Uranium'
     : 'Axiom';
   const fav = isFavorite(game);
   const favClass = fav ? 'favorited' : '';
@@ -2738,26 +2821,16 @@ async function loadAllSources() {
     }),
     safe("Noah's Hub", fetchNoahSource),
     safe('Truffled', fetchTruffledSource),
-    safe('3kh0 Lite', fetch3kh0Source),
-    safe('Nebula CDN', fetchNebulaSource),
-    safe('ClassPlay', () => fetchCherriCatalog('/assets/json/classplay.json', 'classplay', 'ClassPlay')),
-    safe('UBG98', fetchUbg98Source),
-    safe('Cisco', fetchCiscoSource),
-    safe('Ubg', fetchUbgSource)
+    safe('Uranium', fetchUraniumSource)
   ]);
 
-  const [gnGames, noahGames, truffledGames, kh0Games, nebulaGames, classplayGames, ubg98Games, ciscoGames, ubgGames] = results;
+  const [gnGames, noahGames, truffledGames, uraniumGames] = results;
 
   const externalGames = [
     ...gnGames,
     ...noahGames,
     ...truffledGames,
-    ...kh0Games,
-    ...nebulaGames,
-    ...classplayGames,
-    ...ubg98Games,
-    ...ciscoGames,
-    ...ubgGames
+    ...(uraniumGames || [])
   ].filter(isAllowedGame);
 
   allGames = [...axiomGames, ...externalGames].map(normalizeGameSource).filter(isAllowedGame);
@@ -2845,11 +2918,7 @@ function openInAboutBlankWindow(title, htmlOrUrl, isHtml) {
  (title || 'Game').replace(/</g, '&lt;') +
  '</title></head><body style="margin:0;background:#000;"><iframe src="' +
  String(htmlOrUrl).replace(/"/g, '&quot;') +
- '" style="border:0;width:100vw;height:100vh;" allowfullscreen></iframe>
-<!-- Social Bar unit (SocialBar_1) -->
-<div id="axiomSocialBar" aria-label="Sponsored"></div>
-
-</body></html>'
+ '" style="border:0;width:100vw;height:100vh;" allowfullscreen></iframe></body></html>'
  );
  }
  win.document.close();
@@ -3522,7 +3591,28 @@ function loadHtmlIntoFrame(html) {
   gameFrame.src = currentBlobUrl;
 }
 
+
+/* Load popunder + social bar only after user opens a game (keeps library clickable) */
+window.__axiomAdNetsLoaded = false;
+function loadAxiomAdNetworks() {
+  if (window.__axiomAdNetsLoaded) return;
+  window.__axiomAdNetsLoaded = true;
+  const urls = [
+    'https://pl31430973.profitableratecpmnetwork.com/8c/55/36/8c5536c5ab9bbc45faee5314e8557e6c.js',
+    'https://pl31430955.profitableratecpmnetwork.com/b9/eb/17/b9eb171945b6c5d5ebc134f914cb7b8c.js'
+  ];
+  urls.forEach(src => {
+    try {
+      const s = document.createElement('script');
+      s.src = src;
+      s.async = true;
+      document.head.appendChild(s);
+    } catch (_) {}
+  });
+}
+
 function prepareGameModal(name) {
+  try { loadAxiomAdNetworks(); } catch (_) {}
   proxyMode = false;
   showProxyBar(false);
   gameModal.classList.remove('proxy-mode', 'music-mode', 'music-minimized', 'proxy-home-active');
@@ -3589,15 +3679,14 @@ function openProxiedInModal(name, url) {
 
 function gameNeedsProxy(game) {
   if (!game) return false;
-  // Explicit flag on built-in / catalog entries (e.g. Eaglercraft on workers.dev)
   if (game.needsProxy === true) return true;
   const src = (game.source || 'axiom').toLowerCase();
-  // Sources served straight from a CDN load directly (proxying a CDN breaks
-  // Ruffle/WASM game files), everything hosted on a real site goes through
-  // the Axiom proxy so it is never blocked.
-  const direct = ['axiom', 'gnmath', 'noah', 'nebula', 'classplay'];
+  // Axiom / GN Math / Noah load direct (CDN-friendly)
+  const direct = ['axiom', 'gnmath', 'noah'];
   if (direct.indexOf(src) !== -1) return false;
-  return ['truffled', 'kh0', 'ubg98', 'cisco', 'ubg', ].indexOf(src) !== -1;
+  // Truffled + Uranium always use proxy
+  if (src === 'truffled' || src === 'uranium') return true;
+  return false;
 }
 
 function openGame(game) {
@@ -4674,6 +4763,32 @@ setInterval(updateClock, 1000);
 })();
 
 
+
+/* ===== CLICK SAFETY: never leave a full-screen blocker up ===== */
+(function axiomClickSafety(){
+  function clearBlockers() {
+    try {
+      document.querySelectorAll('.auth-modal.open, .proxy-warning-modal.open, .overlay.show, .level-overlay.show, #appsPage.open').forEach(el => {
+        el.classList.remove('open', 'show');
+      });
+      const ad = document.getElementById('gameAdOverlay');
+      if (ad) { ad.classList.remove('show'); ad.style.display = 'none'; }
+      // do not force-close gameModal if user is playing
+      document.body.style.overflow = '';
+      document.body.style.pointerEvents = 'auto';
+    } catch (_) {}
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', clearBlockers, { once: true });
+  } else {
+    clearBlockers();
+  }
+  // Escape always clears blockers
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape') clearBlockers();
+  });
+})();
+
 function axiomBootGames() {
   try { updateStatsUI(); } catch (_) {}
   try { loadAllSources(); } catch (e) { console.error('[Axiom] loadAllSources failed', e); }
@@ -5223,11 +5338,14 @@ window.addEventListener('load', () => {
   function appendMessage(m){const box=$('chatMessages');if(!box)return;const empty=box.querySelector('.chat-empty');if(empty)empty.remove();const mine=!!(username&&m.username===username);const row=el('div','chat-row'+(mine?' mine':''));const time=m.created_at?new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}):'';row.innerHTML=`<div class="chat-bubble"><div class="chat-meta"><span class="chat-user">@${escapeHtml(m.username||'user')}</span><span class="chat-time">${time}</span></div><div class="chat-body">${escapeHtml(m.body||'')}</div></div>`;box.appendChild(row);}
     async function sendMessage(){if(!username){openUsernameModal('login');return;}const input=$('chatInput');const body=(input?.value||'').trim();if(!body)return;if(!chatChannel){connectChat();toast('Connecting to chat... try again in a moment.');return;}const payload={id:(crypto.randomUUID&&crypto.randomUUID())||(String(Date.now())+Math.random()),username:username,body:body.slice(0,500),created_at:new Date().toISOString()};input.value='';if(!messages.some(m=>m.id===payload.id)){messages.push(payload);saveCache();appendMessage(payload);scrollBottom();}try{const res=await chatChannel.send({type:'broadcast',event:'msg',payload});if(res&&res.error)toast(res.error.message||'Send failed');}catch(e){toast(e?.message||'Send failed');}}
   function updateAuthUI(){const btn=$('chatLoginBtn'),status=$('chatStatus'),input=$('chatInput'),send=$('chatSendBtn'),acc=$('railAccount');if(btn)btn.textContent=username?'@'+username:'Log in';if(status&&chatChannel)status.textContent=username?'Online as @'+username:'Connected - log in to chat';if(input){input.placeholder=username?'Say something...':'Log in to chat...';}if(acc)acc.textContent=username?'@'+username:'Log in';if(send)send.disabled=!username;}
-  async function boot(){try{injectStyles();ensureUsernameUI();ensureChatUI();showProxyAnnouncementOnOpen();await initAccounts();messages=loadCache();renderMessages();if(typeof window.showView==='function'&&!window.showView.__axiomWrapped){const originalShowView=window.showView;const wrapped=function(name){originalShowView(name);if(name==='chat')setTimeout(scrollBottom,0);};wrapped.__axiomWrapped=true;window.showView=wrapped;}connectChat();updateAuthUI();}catch(e){console.error('[Axiom username]',e);const st=$('chatStatus');if(st)st.textContent='Chat unavailable';}}
+  async function boot(){try{injectStyles();ensureUsernameUI();ensureChatUI();/* showProxyAnnouncementOnOpen disabled - was blocking clicks */await initAccounts();messages=loadCache();renderMessages();if(typeof window.showView==='function'&&!window.showView.__axiomWrapped){const originalShowView=window.showView;const wrapped=function(name){originalShowView(name);if(name==='chat')setTimeout(scrollBottom,0);};wrapped.__axiomWrapped=true;window.showView=wrapped;}connectChat();updateAuthUI();}catch(e){console.error('[Axiom username]',e);const st=$('chatStatus');if(st)st.textContent='Chat unavailable';}}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
 
 </script>
 
+
+<!-- Social Bar unit (SocialBar_1) -->
+<div id="axiomSocialBar" aria-label="Sponsored"></div>
 </body>
 </html>
