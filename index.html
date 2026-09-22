@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -971,44 +972,51 @@ body.has-social-bar #viewChat{
   body.has-social-bar #railExpandBtn{ bottom: 148px; }
 }
 
-/* Banner 160x300 inside interstitial */
-.game-ad-slot.banner-160x300{
-  width:160px; min-height:300px; height:300px; margin:0 auto;
+/* Bigger leaderboard ad (728x90) — pre-play only */
+.game-ad-slot.banner-728x90{
+  width:min(728px, 92vw); min-height:90px; height:90px; margin:0 auto;
   border-style:solid; border-color:rgba(var(--primary-rgb),0.25);
 }
-.game-ad-card.banner-mode{ width:min(220px,92%); }
+.game-ad-card.banner-mode{ width:min(780px, 94vw); }
 
-/* ===== GAME INTERSTITIAL ADS (every ~60s while playing) ===== */
+/* ===== GAME PRE-PLAY AD ONLY (shown once at the start of each game) ===== */
 #gameAdOverlay{
   display:none; position:absolute; inset:0; z-index:50;
-  background:rgba(0,0,0,0.88); backdrop-filter:blur(10px);
-  align-items:center; justify-content:center; flex-direction:column; gap:14px;
-  padding:20px;
+  background:rgba(0,0,0,0.92); backdrop-filter:blur(12px);
+  align-items:center; justify-content:center; flex-direction:column; gap:18px;
+  padding:24px;
+  pointer-events:none;
 }
-#gameAdOverlay.show{ display:flex !important; }
+#gameAdOverlay.show{
+  display:flex !important;
+  pointer-events:auto;
+}
+#gameAdOverlay .game-ad-card{ pointer-events:auto; position:relative; z-index:2; }
+#gameAdOverlay .game-ad-skip{ position:relative; z-index:5; }
 .game-ad-card{
-  width:min(420px,92%); max-height:min(70vh,520px);
-  background:rgba(12,12,20,0.98); border:1px solid rgba(var(--primary-rgb),0.35);
-  border-radius:16px; padding:18px 16px 14px; text-align:center;
-  box-shadow:0 20px 60px rgba(0,0,0,0.55);
-  display:flex; flex-direction:column; gap:12px;
+  width:min(780px, 94vw); max-height:min(80vh, 560px);
+  background:rgba(12,12,20,0.98); border:1px solid rgba(var(--primary-rgb),0.4);
+  border-radius:18px; padding:22px 20px 18px; text-align:center;
+  box-shadow:0 24px 70px rgba(0,0,0,0.6), 0 0 40px rgba(var(--primary-rgb),0.12);
+  display:flex; flex-direction:column; gap:14px;
 }
-.game-ad-card h3{ margin:0; font-size:1em; color:var(--primary); letter-spacing:0.04em; text-transform:uppercase; }
+.game-ad-card h3{ margin:0; font-size:1.1em; color:var(--primary); letter-spacing:0.05em; text-transform:uppercase; }
 .game-ad-slot{
-  min-height:250px; width:100%; border-radius:12px;
+  min-height:90px; width:100%; border-radius:12px;
   background:rgba(255,255,255,0.03); border:1px dashed rgba(255,255,255,0.12);
   display:flex; align-items:center; justify-content:center; overflow:hidden;
   position:relative;
 }
-.game-ad-slot iframe{ width:100%; height:280px; border:0; border-radius:10px; background:#111; }
+.game-ad-slot iframe{ width:100%; max-width:728px; height:90px; border:0; border-radius:10px; background:#111; }
 .game-ad-skip{
-  margin:0 auto; padding:10px 18px; border-radius:999px; cursor:pointer;
-  border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.08);
-  color:#fff; font-family:inherit; font-weight:700; font-size:0.85em;
+  margin:0 auto; padding:12px 28px; border-radius:999px; cursor:pointer;
+  border:1px solid rgba(255,255,255,0.25); background:rgba(var(--primary-rgb),0.22);
+  color:#fff; font-family:inherit; font-weight:700; font-size:0.95em;
+  transition: background .15s, border-color .15s, transform .15s;
 }
-.game-ad-skip:hover{ background:rgba(var(--primary-rgb),0.25); border-color:rgba(var(--primary-rgb),0.5); }
-.game-ad-skip:disabled{ opacity:0.45; cursor:default; }
-.game-ad-hint{ font-size:0.72em; color:var(--muted); margin:0; }
+.game-ad-skip:hover{ background:rgba(var(--primary-rgb),0.4); border-color:rgba(var(--primary-rgb),0.65); transform:translateY(-1px); }
+.game-ad-skip:disabled{ opacity:0.45; cursor:default; transform:none; }
+.game-ad-hint{ font-size:0.75em; color:var(--muted); margin:0; }
 
 .floating-particles{ position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden; }
 .particle{
@@ -1193,39 +1201,63 @@ body.has-wallpaper::before{ opacity:0.5; }
   </div>
   <div class="axiom-adsense-wrap" id="homeAdsenseWrap" aria-label="Sponsored">
     <span class="axiom-adsense-label">Sponsored</span>
-    <!-- Responsive display unit — replace data-ad-slot with your real slot ID from AdSense -->
-    <ins class="adsbygoogle"
-         style="display:block"
-         data-ad-client="ca-pub-7742519907624481"
-         data-ad-slot="1234567890"
-         data-ad-format="auto"
-         data-full-width-responsive="true"></ins>
-    <ins class="adsbygoogle"
-         style="display:block;text-align:center;"
-         data-ad-layout="in-article"
-         data-ad-format="fluid"
-         data-ad-client="ca-pub-7742519907624481"
-         data-ad-slot="0987654321"></ins>
+    <!-- Single 728×90 leaderboard only -->
+    <div id="homeBanner728" style="width:min(728px,92vw);height:90px;min-height:90px;max-height:90px;margin:0 auto;display:flex;justify-content:center;align-items:center;overflow:hidden;border-radius:12px;position:relative;z-index:2;isolation:isolate;contain:layout paint;pointer-events:auto;">
+      <div id="container-ac3950f40b3bd6fd037e1d099230d92a" style="width:728px;height:90px;max-width:100%;overflow:hidden;"></div>
+    </div>
   </div>
+  <script>
+  (function initHome728() {
+    var loaded = false;
+    function load728() {
+      if (loaded) return;
+      loaded = true;
+      try {
+        var wrap = document.getElementById('homeBanner728');
+        if (!wrap) return;
+        // Constrain any iframes the network injects into this box only
+        var obs = new MutationObserver(function () {
+          wrap.querySelectorAll('iframe, div, ins').forEach(function (el) {
+            try {
+              el.style.maxWidth = '100%';
+              el.style.maxHeight = '90px';
+              if (el.tagName === 'IFRAME') {
+                el.setAttribute('width', '728');
+                el.setAttribute('height', '90');
+              }
+            } catch (_) {}
+          });
+        });
+        obs.observe(wrap, { childList: true, subtree: true });
+
+        window.atOptions = {
+          key: 'ac3950f40b3bd6fd037e1d099230d92a',
+          format: 'iframe',
+          height: 90,
+          width: 728,
+          params: {}
+        };
+        var s1 = document.createElement('script');
+        s1.type = 'text/javascript';
+        s1.text = "atOptions = { 'key':'ac3950f40b3bd6fd037e1d099230d92a', 'format':'iframe', 'height':90, 'width':728, 'params':{} };";
+        var s2 = document.createElement('script');
+        s2.type = 'text/javascript';
+        s2.async = true;
+        s2.src = 'https://www.highrevenueformat.com/ac3950f40b3bd6fd037e1d099230d92a/invoke.js?t=' + Date.now();
+        wrap.appendChild(s1);
+        wrap.appendChild(s2);
+      } catch (e) { console.warn('[Axiom] home 728 ad', e); }
+    }
+    // Delay load slightly; never block clicks while loading
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function () { setTimeout(load728, 800); });
+    } else {
+      setTimeout(load728, 800);
+    }
+  })();
+  </script>
 </section>
-<script>
-(function initHomeAdSense() {
-  function pushUnits() {
-    try {
-      var nodes = document.querySelectorAll('#homeAdsenseWrap ins.adsbygoogle');
-      nodes.forEach(function (el) {
-        if (el.getAttribute('data-adsbygoogle-status')) return;
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-      });
-    } catch (e) { console.warn('[Axiom] AdSense push', e); }
-  }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function () { setTimeout(pushUnits, 400); });
-  } else {
-    setTimeout(pushUnits, 400);
-  }
-})();
-</script>
+
 
 <!-- GAMES LIBRARY -->
 <section class="view" id="viewGames">
@@ -1364,15 +1396,15 @@ body.has-wallpaper::before{ opacity:0.5; }
  <div id="modalErrorReason" style="font-size:0.9em;color:rgba(255,255,255,0.6);"></div>
  </div>
 
- <!-- Interstitial ad shown ~every 60s while a game is open -->
+ <!-- Pre-play ad only — shown once at the start of each game (728×90) -->
  <div id="gameAdOverlay" aria-hidden="true">
   <div class="game-ad-card banner-mode">
    <h3>Watch a short ad to play</h3>
-   <div class="game-ad-slot banner-160x300" id="gameAdSlot">
-     <span style="color:rgba(255,255,255,0.35);font-size:0.8em;padding:12px;">Banner 160×300</span>
+   <div class="game-ad-slot banner-728x90" id="gameAdSlot">
+     <span style="color:rgba(255,255,255,0.35);font-size:0.8em;padding:12px;">Loading ad…</span>
    </div>
    <button type="button" class="game-ad-skip" id="gameAdSkipBtn" disabled>Skip in 5…</button>
-   <p class="game-ad-hint">Ads keep Axiom free</p>
+   <p class="game-ad-hint">Ads keep Axiom free · One ad at the start only</p>
   </div>
  </div>
 </div>
@@ -3693,11 +3725,26 @@ function loadAxiomAdNetworks() {
 (function armPopundersOnHomeOnly() {
   function onHomeGesture(e) {
     if (!isOnHomeScreen()) return;
-    // Don't fire from rail buttons that leave home immediately
-    try { loadAxiomAdNetworks(); } catch (_) {}
+    // Never arm popunders from UI chrome — only from empty home background / search area
+    try {
+      var t = e.target;
+      if (!t) return;
+      if (t.closest && (
+        t.closest('.rail') ||
+        t.closest('#rail') ||
+        t.closest('#railCollapseBtn') ||
+        t.closest('#railExpandBtn') ||
+        t.closest('.title-discord-btn') ||
+        t.closest('#homeProxyInput') ||
+        t.closest('button') ||
+        t.closest('a') ||
+        t.closest('#settingsPanel') ||
+        t.closest('#appsPage')
+      )) return;
+      loadAxiomAdNetworks();
+    } catch (_) {}
   }
   document.addEventListener('pointerdown', onHomeGesture, true);
-  document.addEventListener('click', onHomeGesture, true);
 })();
 
 function prepareGameModal(name) {
@@ -4693,23 +4740,13 @@ setInterval(updateClock, 1000);
 
 
 
-/* ========== GAME ADS: pre-play gate + mid-game interstitials ========== */
+/* ========== GAME ADS: pre-play ONLY (beginning of each game) + bigger 728x90 ========== */
 (function () {
-  const AD_INTERVAL_MS = 5 * 60 * 1000;   // mid-game every 5 minutes
-  const SKIP_DELAY_MS = 5000;         // must wait 5s before continue
-  let adTimer = null;
+  const SKIP_DELAY_MS = 5000;
   let skipTimer = null;
   let skipCountdown = null;
-  let pendingPlay = null;             // { run: fn } after pre-play ad
+  let pendingPlay = null;
   let isPrePlayGate = false;
-
-  function isGamePlaying() {
-    const m = document.getElementById('gameModal');
-    if (!m || m.style.display !== 'flex' || !m.classList.contains('open')) return false;
-    if (m.classList.contains('music-minimized')) return false;
-    if (isPrePlayGate) return false;
-    return true;
-  }
 
   function hideGameAd() {
     const ov = document.getElementById('gameAdOverlay');
@@ -4721,7 +4758,10 @@ setInterval(updateClock, 1000);
     clearTimeout(skipTimer);
     clearInterval(skipCountdown);
     const btn = document.getElementById('gameAdSkipBtn');
-    if (btn) { btn.disabled = true; btn.textContent = 'Skip in 5…'; }
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Skip in 5…';
+    }
   }
 
   function fillAdSlot() {
@@ -4731,44 +4771,63 @@ setInterval(updateClock, 1000);
 
     try {
       window.atOptions = {
-        key: 'a297d9167357ffa94cd24bd3cf872df2',
+        key: 'ac3950f40b3bd6fd037e1d099230d92a',
         format: 'iframe',
-        height: 300,
-        width: 160,
+        height: 90,
+        width: 728,
         params: {}
       };
     } catch (_) {}
 
     const holder = document.createElement('div');
-    holder.id = 'container-a297d9167357ffa94cd24bd3cf872df2';
-    holder.style.width = '160px';
-    holder.style.height = '300px';
-    holder.style.margin = '0 auto';
+    holder.id = 'container-ac3950f40b3bd6fd037e1d099230d92a-game';
+    holder.style.cssText = 'width:100%;max-width:728px;height:90px;margin:0 auto;overflow:hidden;';
     slot.appendChild(holder);
 
-    const s1 = document.createElement('script');
-    s1.type = 'text/javascript';
-    s1.text = "atOptions = { 'key':'a297d9167357ffa94cd24bd3cf872df2', 'format':'iframe', 'height':300, 'width':160, 'params':{} };";
-    slot.appendChild(s1);
+    // Keep injected iframes inside the slot
+    try {
+      const obs = new MutationObserver(function () {
+        slot.querySelectorAll('iframe').forEach(function (el) {
+          try {
+            el.style.maxWidth = '100%';
+            el.style.maxHeight = '90px';
+            el.setAttribute('width', '728');
+            el.setAttribute('height', '90');
+          } catch (_) {}
+        });
+      });
+      obs.observe(slot, { childList: true, subtree: true });
+    } catch (_) {}
 
-    const s2 = document.createElement('script');
-    s2.type = 'text/javascript';
-    s2.src = 'https://www.highrevenueformat.com/a297d9167357ffa94cd24bd3cf872df2/invoke.js?t=' + Date.now();
-    s2.async = true;
-    s2.onerror = function () {
-      if (!slot.querySelector('iframe')) {
-        const note = document.createElement('div');
-        note.style.cssText = 'padding:16px;color:rgba(255,255,255,0.5);font-size:0.78em;line-height:1.45;text-align:center;';
-        note.innerHTML = 'Sponsored break<br><br>Ad loading… (allow popups / disable adblock for full support)';
-        slot.appendChild(note);
-      }
-    };
-    slot.appendChild(s2);
+    try {
+      const s1 = document.createElement('script');
+      s1.type = 'text/javascript';
+      s1.text = "atOptions = { 'key':'ac3950f40b3bd6fd037e1d099230d92a', 'format':'iframe', 'height':90, 'width':728, 'params':{} };";
+      slot.appendChild(s1);
+
+      const s2 = document.createElement('script');
+      s2.type = 'text/javascript';
+      s2.async = true;
+      s2.src = 'https://www.highrevenueformat.com/ac3950f40b3bd6fd037e1d099230d92a/invoke.js?t=' + Date.now();
+      s2.onerror = function () {
+        if (!slot.querySelector('iframe')) {
+          const note = document.createElement('div');
+          note.style.cssText = 'padding:16px;color:rgba(255,255,255,0.5);font-size:0.78em;line-height:1.45;text-align:center;';
+          note.innerHTML = 'Sponsored break<br><br>Ad loading…';
+          slot.appendChild(note);
+        }
+      };
+      slot.appendChild(s2);
+    } catch (e) {
+      console.warn('[Axiom] fillAdSlot', e);
+      const note = document.createElement('div');
+      note.style.cssText = 'padding:16px;color:rgba(255,255,255,0.5);font-size:0.78em;text-align:center;';
+      note.textContent = 'Sponsored break';
+      slot.appendChild(note);
+    }
   }
 
-  try {
-    document.body.classList.add('has-social-bar');
-  } catch (_) {}
+  try { document.body.classList.add('has-social-bar'); } catch (_) {}
 
   function startSkipCountdown(btn, doneLabel) {
     if (!btn) return;
@@ -4776,37 +4835,38 @@ setInterval(updateClock, 1000);
     let left = Math.ceil(SKIP_DELAY_MS / 1000);
     btn.textContent = 'Skip in ' + left + '…';
     clearInterval(skipCountdown);
-    skipCountdown = setInterval(() => {
+    clearTimeout(skipTimer);
+    skipCountdown = setInterval(function () {
       left -= 1;
       if (left <= 0) {
         clearInterval(skipCountdown);
         btn.disabled = false;
-        btn.textContent = doneLabel || 'Continue playing';
+        btn.textContent = doneLabel || 'Play now';
       } else {
         btn.textContent = 'Skip in ' + left + '…';
       }
     }, 1000);
-    clearTimeout(skipTimer);
-    skipTimer = setTimeout(() => {
-      if (btn) { btn.disabled = false; btn.textContent = doneLabel || 'Continue playing'; }
+    skipTimer = setTimeout(function () {
+      btn.disabled = false;
+      btn.textContent = doneLabel || 'Play now';
     }, SKIP_DELAY_MS);
   }
 
   function showGameAd(opts) {
     opts = opts || {};
+    if (!opts.prePlay) return; // only at beginning
     const ov = document.getElementById('gameAdOverlay');
     const btn = document.getElementById('gameAdSkipBtn');
     const title = ov && ov.querySelector('.game-ad-card h3');
     if (!ov) return;
-    if (!opts.force && !isGamePlaying() && !opts.prePlay) return;
 
-    isPrePlayGate = !!opts.prePlay;
-    fillAdSlot();
+    isPrePlayGate = true;
+    try { fillAdSlot(); } catch (e) { console.warn(e); }
     ov.classList.add('show');
     ov.style.setProperty('display', 'flex', 'important');
     ov.setAttribute('aria-hidden', 'false');
-    if (title) title.textContent = opts.prePlay ? 'Watch a short ad to play' : 'Sponsored';
-    startSkipCountdown(btn, opts.prePlay ? 'Play now' : 'Continue playing');
+    if (title) title.textContent = 'Watch a short ad to play';
+    startSkipCountdown(btn, 'Play now');
   }
 
   function completePrePlayGate() {
@@ -4819,42 +4879,39 @@ setInterval(updateClock, 1000);
     }
   }
 
-  function startGameAdLoop() {
-    stopGameAdLoop(true);
-    adTimer = setInterval(() => {
-      if (isGamePlaying()) showGameAd({ force: true });
-    }, AD_INTERVAL_MS);
-  }
-
+  function startGameAdLoop() { /* mid-game ads off */ }
   function stopGameAdLoop(keepOverlay) {
-    clearInterval(adTimer);
-    adTimer = null;
     if (!keepOverlay) hideGameAd();
   }
 
-  function onSkipClick() {
+  function onSkipClick(e) {
+    if (e) {
+      try { e.preventDefault(); e.stopPropagation(); } catch (_) {}
+    }
     const btn = document.getElementById('gameAdSkipBtn');
     if (btn && btn.disabled) return;
-    if (isPrePlayGate) {
-      completePrePlayGate();
-    } else {
-      hideGameAd();
-    }
+    if (isPrePlayGate) completePrePlayGate();
+    else hideGameAd();
   }
 
-  document.addEventListener('DOMContentLoaded', () => {
+  function wireSkipBtn() {
     const btn = document.getElementById('gameAdSkipBtn');
-    if (btn) btn.addEventListener('click', onSkipClick);
-  });
-  const btnNow = document.getElementById('gameAdSkipBtn');
-  if (btnNow) btnNow.addEventListener('click', onSkipClick);
+    if (!btn || btn.dataset.wired === '1') return;
+    btn.dataset.wired = '1';
+    btn.addEventListener('click', onSkipClick, true);
+    btn.addEventListener('pointerup', onSkipClick, true);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', wireSkipBtn);
+  } else {
+    wireSkipBtn();
+  }
+  wireSkipBtn();
 
   const modal = document.getElementById('gameModal');
   if (modal) {
-    const obs = new MutationObserver(() => {
-      if (modal.style.display === 'flex' && modal.classList.contains('open') && !isPrePlayGate) {
-        startGameAdLoop();
-      } else if (!(modal.style.display === 'flex' && modal.classList.contains('open'))) {
+    const obs = new MutationObserver(function () {
+      if (!(modal.style.display === 'flex' && modal.classList.contains('open'))) {
         stopGameAdLoop(false);
         pendingPlay = null;
         isPrePlayGate = false;
@@ -4878,7 +4935,7 @@ setInterval(updateClock, 1000);
   };
 
   let tries = 0;
-  const patchClose = setInterval(() => {
+  const patchClose = setInterval(function () {
     tries++;
     if (typeof closeModal === 'function') {
       const orig = closeModal;
@@ -4892,10 +4949,13 @@ setInterval(updateClock, 1000);
     } else if (tries > 40) clearInterval(patchClose);
   }, 250);
 
-  // Mid-game first ad ~60s after play actually starts
-  window.__axiomScheduleFirstAd = function () {
-    setTimeout(() => { if (isGamePlaying()) showGameAd({ force: true }); }, 5 * 60 * 1000);
-  };
+  window.__axiomScheduleFirstAd = function () { /* disabled */ };
+
+  // Safety: never leave blockers up on boot
+  try {
+    hideGameAd();
+    document.body.style.pointerEvents = 'auto';
+  } catch (_) {}
 })();
 
 
@@ -4905,31 +4965,67 @@ setInterval(updateClock, 1000);
   function clearBlockers(opts) {
     opts = opts || {};
     try {
-      document.querySelectorAll('.auth-modal.open, .proxy-warning-modal.open, .overlay.show, .level-overlay.show, #appsPage.open').forEach(el => {
+      document.querySelectorAll('.auth-modal.open, .proxy-warning-modal.open, .overlay.show, .level-overlay.show, #appsPage.open').forEach(function(el) {
         el.classList.remove('open', 'show');
       });
-      // Only hide game ad if explicitly requested (not on boot — that was killing ads)
-      if (opts.hideGameAd) {
-        const ad = document.getElementById('gameAdOverlay');
+      // Always ensure game ad is not covering the main UI unless a game is open
+      var modal = document.getElementById('gameModal');
+      var gameOpen = modal && modal.style.display === 'flex' && modal.classList.contains('open');
+      if (opts.hideGameAd || !gameOpen) {
+        var ad = document.getElementById('gameAdOverlay');
         if (ad) {
           ad.classList.remove('show');
           ad.style.removeProperty('display');
           ad.setAttribute('aria-hidden', 'true');
         }
       }
-      document.body.style.overflow = '';
+      // Kill invisible full-page click catchers some ad networks inject outside our slots
+      document.querySelectorAll('body > iframe, body > div').forEach(function(el) {
+        try {
+          var st = window.getComputedStyle(el);
+          var z = parseInt(st.zIndex, 10) || 0;
+          var pos = st.position;
+          if ((pos === 'fixed' || pos === 'absolute') && z > 5000 && el.id !== 'gameModal' && el.id !== 'gameAdOverlay' && el.id !== 'appsPage' && el.id !== 'settingsPanel' && !el.classList.contains('auth-modal') && !el.classList.contains('proxy-warning-modal')) {
+            var w = el.offsetWidth, h = el.offsetHeight;
+            if (w >= window.innerWidth * 0.9 && h >= window.innerHeight * 0.9) {
+              el.style.pointerEvents = 'none';
+              el.style.display = 'none';
+            }
+          }
+        } catch (_) {}
+      });
+      document.body.style.overflow = gameOpen ? 'hidden' : '';
       document.body.style.pointerEvents = 'auto';
     } catch (_) {}
   }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function(){ clearBlockers({ hideGameAd: false }); }, { once: true });
-  } else {
-    clearBlockers({ hideGameAd: false });
+  function bootClear() {
+    clearBlockers({ hideGameAd: true });
   }
-  // Escape closes non-ad modals; game ad has its own skip button
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bootClear, { once: true });
+  } else {
+    bootClear();
+  }
+  setTimeout(bootClear, 300);
+  setTimeout(bootClear, 1500);
   document.addEventListener('keydown', function(e){
     if (e.key === 'Escape') clearBlockers({ hideGameAd: false });
   });
+  // Periodic light sweep so stuck ad overlays cannot freeze the site
+  setInterval(function(){
+    try {
+      var modal = document.getElementById('gameModal');
+      var gameOpen = modal && modal.style.display === 'flex' && modal.classList.contains('open');
+      if (!gameOpen) {
+        document.body.style.pointerEvents = 'auto';
+        var ad = document.getElementById('gameAdOverlay');
+        if (ad && ad.classList.contains('show')) {
+          ad.classList.remove('show');
+          ad.style.removeProperty('display');
+        }
+      }
+    } catch (_) {}
+  }, 4000);
 })();
 
 function axiomBootGames() {
