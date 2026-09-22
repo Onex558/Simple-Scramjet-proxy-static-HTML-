@@ -3590,6 +3590,8 @@ function loadHtmlIntoFrame(html) {
   gameFrame.style.visibility = 'visible';
   gameFrame.src = currentBlobUrl;
 }
+
+
 /* Load popunder + social bar only after user opens a game (keeps library clickable) */
 window.__axiomAdNetsLoaded = false;
 function loadAxiomAdNetworks() {
@@ -3608,9 +3610,6 @@ function loadAxiomAdNetworks() {
     } catch (_) {}
   });
 }
-
-// Load them right away when the page opens
-loadAxiomAdNetworks();
 
 function prepareGameModal(name) {
   try { loadAxiomAdNetworks(); } catch (_) {}
@@ -4615,30 +4614,21 @@ setInterval(updateClock, 1000);
     if (btn) { btn.disabled = true; btn.textContent = 'Skip in 5…'; }
   }
 
- function fillAdSlot() {
-  const slot = document.getElementById('gameAdSlot');
-  if (!slot) return;
-  slot.innerHTML = '';
+  function fillAdSlot() {
+    const slot = document.getElementById('gameAdSlot');
+    if (!slot) return;
+    slot.innerHTML = '';
 
-  const holder = document.createElement('div');
-  holder.style.cssText = 'width:160px;height:300px;margin:0 auto;overflow:hidden;';
-  slot.appendChild(holder);
-
-  const s1 = document.createElement('script');
-  s1.text = `atOptions = {
-    'key' : 'a297d9167357ffa94cd24bd3cf872df2',
-    'format' : 'iframe',
-    'height' : 300,
-    'width' : 160,
-    'params' : {}
-  };`;
-  holder.appendChild(s1);
-
-  const s2 = document.createElement('script');
-  s2.src = 'https://www.highrevenueformat.com/a297d9167357ffa94cd24bd3cf872df2/invoke.js?t=' + Date.now();
-  s2.async = true;
-  holder.appendChild(s2);
-}
+    // Banner 160x300 — highrevenueformat unit
+    try {
+      window.atOptions = {
+        key: 'a297d9167357ffa94cd24bd3cf872df2',
+        format: 'iframe',
+        height: 300,
+        width: 160,
+        params: {}
+      };
+    } catch (_) {}
 
     // Container the network script can target
     const holder = document.createElement('div');
