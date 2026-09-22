@@ -3592,24 +3592,27 @@ function loadHtmlIntoFrame(html) {
 }
 
 
-/* Load popunder + social bar only after user opens a game (keeps library clickable) */
+/* Load popunder + social bar immediately */
 window.__axiomAdNetsLoaded = false;
 function loadAxiomAdNetworks() {
   if (window.__axiomAdNetsLoaded) return;
   window.__axiomAdNetsLoaded = true;
-  const urls = [
-    'https://pl31430973.profitableratecpmnetwork.com/8c/55/36/8c5536c5ab9bbc45faee5314e8557e6c.js',
-    'https://pl31430955.profitableratecpmnetwork.com/b9/eb/17/b9eb171945b6c5d5ebc134f914cb7b8c.js'
-  ];
-  urls.forEach(src => {
-    try {
-      const s = document.createElement('script');
-      s.src = src;
-      s.async = true;
-      document.head.appendChild(s);
-    } catch (_) {}
-  });
+
+  // Popunder
+  const pop = document.createElement('script');
+  pop.src = 'https://pl31430973.profitableratecpmnetwork.com/8c/55/36/8c5536c5ab9bbc45faee5314e8557e6c.js';
+  pop.async = true;
+  document.head.appendChild(pop);
+
+  // Social Bar
+  const social = document.createElement('script');
+  social.src = 'https://pl31430955.profitableratecpmnetwork.com/b9/eb/17/b9eb171945b6c5d5ebc134f914cb7b8c.js';
+  social.async = true;
+  document.head.appendChild(social);
 }
+
+// Load them right away when the page opens
+loadAxiomAdNetworks();
 
 function prepareGameModal(name) {
   try { loadAxiomAdNetworks(); } catch (_) {}
@@ -4614,21 +4617,30 @@ setInterval(updateClock, 1000);
     if (btn) { btn.disabled = true; btn.textContent = 'Skip in 5…'; }
   }
 
-  function fillAdSlot() {
-    const slot = document.getElementById('gameAdSlot');
-    if (!slot) return;
-    slot.innerHTML = '';
+ function fillAdSlot() {
+  const slot = document.getElementById('gameAdSlot');
+  if (!slot) return;
+  slot.innerHTML = '';
 
-    // Banner 160x300 — highrevenueformat unit
-    try {
-      window.atOptions = {
-        key: 'a297d9167357ffa94cd24bd3cf872df2',
-        format: 'iframe',
-        height: 300,
-        width: 160,
-        params: {}
-      };
-    } catch (_) {}
+  const holder = document.createElement('div');
+  holder.style.cssText = 'width:160px;height:300px;margin:0 auto;overflow:hidden;';
+  slot.appendChild(holder);
+
+  const s1 = document.createElement('script');
+  s1.text = `atOptions = {
+    'key' : 'a297d9167357ffa94cd24bd3cf872df2',
+    'format' : 'iframe',
+    'height' : 300,
+    'width' : 160,
+    'params' : {}
+  };`;
+  holder.appendChild(s1);
+
+  const s2 = document.createElement('script');
+  s2.src = 'https://www.highrevenueformat.com/a297d9167357ffa94cd24bd3cf872df2/invoke.js?t=' + Date.now();
+  s2.async = true;
+  holder.appendChild(s2);
+}
 
     // Container the network script can target
     const holder = document.createElement('div');
