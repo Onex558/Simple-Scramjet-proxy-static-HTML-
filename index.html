@@ -15,11 +15,43 @@
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7742519907624481"
      crossorigin="anonymous"></script>
   <script>
+    window.adsbygoogle = window.adsbygoogle || [];
+    // Auto ads (page-level) — requires AdSense approval for this domain
     (adsbygoogle = window.adsbygoogle || []).push({
       google_ad_client: "ca-pub-7742519907624481",
-      enable_page_level_ads: true
+      enable_page_level_ads: true,
+      overlays: { bottom: true }
     });
   </script>
+  <style>
+    /* AdSense slots on home — visible, not covered by rail */
+    .axiom-adsense-wrap {
+      width: min(728px, 92vw);
+      margin: 28px auto 0;
+      min-height: 90px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      position: relative;
+      z-index: 2;
+    }
+    .axiom-adsense-wrap .adsbygoogle {
+      display: block;
+      width: 100%;
+      max-width: 728px;
+      min-height: 90px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .axiom-adsense-label {
+      font-size: 0.65em;
+      color: rgba(255,255,255,0.25);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+  </style>
 
   <!-- Profitablerate scripts deferred until first game open (were blocking clicks) -->
 
@@ -1159,7 +1191,41 @@ body.has-wallpaper::before{ opacity:0.5; }
   <div class="proxy-search-wrap">
     <input type="text" id="homeProxyInput" placeholder="Type a URL or search the web..." autocomplete="off" spellcheck="false">
   </div>
+  <div class="axiom-adsense-wrap" id="homeAdsenseWrap" aria-label="Sponsored">
+    <span class="axiom-adsense-label">Sponsored</span>
+    <!-- Responsive display unit — replace data-ad-slot with your real slot ID from AdSense -->
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-7742519907624481"
+         data-ad-slot="1234567890"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <ins class="adsbygoogle"
+         style="display:block;text-align:center;"
+         data-ad-layout="in-article"
+         data-ad-format="fluid"
+         data-ad-client="ca-pub-7742519907624481"
+         data-ad-slot="0987654321"></ins>
+  </div>
 </section>
+<script>
+(function initHomeAdSense() {
+  function pushUnits() {
+    try {
+      var nodes = document.querySelectorAll('#homeAdsenseWrap ins.adsbygoogle');
+      nodes.forEach(function (el) {
+        if (el.getAttribute('data-adsbygoogle-status')) return;
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+      });
+    } catch (e) { console.warn('[Axiom] AdSense push', e); }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () { setTimeout(pushUnits, 400); });
+  } else {
+    setTimeout(pushUnits, 400);
+  }
+})();
+</script>
 
 <!-- GAMES LIBRARY -->
 <section class="view" id="viewGames">
@@ -1306,7 +1372,7 @@ body.has-wallpaper::before{ opacity:0.5; }
      <span style="color:rgba(255,255,255,0.35);font-size:0.8em;padding:12px;">Banner 160×300</span>
    </div>
    <button type="button" class="game-ad-skip" id="gameAdSkipBtn" disabled>Skip in 5…</button>
-   <p class="game-ad-hint">Ads keep Axiom free — popups may open on click</p>
+   <p class="game-ad-hint">Ads keep Axiom free</p>
   </div>
  </div>
 </div>
@@ -3592,9 +3658,21 @@ function loadHtmlIntoFrame(html) {
 }
 
 
-/* Load popunder + social bar on first meaningful interaction (click / game open) */
+/* Popunders ONLY on Home screen — never while playing games */
 window.__axiomAdNetsLoaded = false;
+function isOnHomeScreen() {
+  try {
+    const home = document.getElementById('viewHome');
+    const modal = document.getElementById('gameModal');
+    if (modal && modal.style.display === 'flex' && modal.classList.contains('open')) return false;
+    if (home && home.classList.contains('active')) return true;
+    // fallback: no other view active
+    return !document.querySelector('.view.active:not(#viewHome)');
+  } catch (_) { return false; }
+}
 function loadAxiomAdNetworks() {
+  // Hard block: never inject popunder scripts while a game/proxy modal is open
+  if (!isOnHomeScreen()) return;
   if (window.__axiomAdNetsLoaded) return;
   window.__axiomAdNetsLoaded = true;
   const urls = [
@@ -3606,23 +3684,24 @@ function loadAxiomAdNetworks() {
       const s = document.createElement('script');
       s.src = src;
       s.async = true;
+      s.setAttribute('data-axiom-popunder', '1');
       document.head.appendChild(s);
     } catch (_) {}
   });
 }
-// Arm popunders after the first real user gesture so networks can open windows on click
-(function armPopundersOnGesture() {
-  const once = function () {
-    document.removeEventListener('pointerdown', once, true);
-    document.removeEventListener('click', once, true);
+// Only arm popunders from clicks on the Home view (not games / browser modal)
+(function armPopundersOnHomeOnly() {
+  function onHomeGesture(e) {
+    if (!isOnHomeScreen()) return;
+    // Don't fire from rail buttons that leave home immediately
     try { loadAxiomAdNetworks(); } catch (_) {}
-  };
-  document.addEventListener('pointerdown', once, true);
-  document.addEventListener('click', once, true);
+  }
+  document.addEventListener('pointerdown', onHomeGesture, true);
+  document.addEventListener('click', onHomeGesture, true);
 })();
 
 function prepareGameModal(name) {
-  try { loadAxiomAdNetworks(); } catch (_) {}
+  // Do NOT load popunders when opening a game
   proxyMode = false;
   showProxyBar(false);
   gameModal.classList.remove('proxy-mode', 'music-mode', 'music-minimized', 'proxy-home-active');
@@ -3735,8 +3814,7 @@ function openGame(game) {
 
   // Pre-play ad: watch a short ad, then start the game
   if (typeof window.__axiomPrePlayAd === 'function') {
-    try { loadAxiomAdNetworks(); } catch (_) {}
-    // Open modal shell first so the ad overlay is visible
+    // Open modal shell first so the ad overlay is visible (no popunders in games)
     try {
       prepareGameModal(game.name);
       // Don't load game frame yet — clear any previous content
@@ -4617,7 +4695,7 @@ setInterval(updateClock, 1000);
 
 /* ========== GAME ADS: pre-play gate + mid-game interstitials ========== */
 (function () {
-  const AD_INTERVAL_MS = 90 * 1000;   // mid-game every 90s
+  const AD_INTERVAL_MS = 5 * 60 * 1000;   // mid-game every 5 minutes
   const SKIP_DELAY_MS = 5000;         // must wait 5s before continue
   let adTimer = null;
   let skipTimer = null;
@@ -4789,7 +4867,6 @@ setInterval(updateClock, 1000);
   window.__axiomStartGameAds = startGameAdLoop;
   window.__axiomStopGameAds = stopGameAdLoop;
   window.__axiomPrePlayAd = function (thenRun) {
-    try { if (typeof loadAxiomAdNetworks === 'function') loadAxiomAdNetworks(); } catch (_) {}
     pendingPlay = { run: thenRun };
     const m = document.getElementById('gameModal');
     if (m) {
@@ -4817,7 +4894,7 @@ setInterval(updateClock, 1000);
 
   // Mid-game first ad ~60s after play actually starts
   window.__axiomScheduleFirstAd = function () {
-    setTimeout(() => { if (isGamePlaying()) showGameAd({ force: true }); }, 60000);
+    setTimeout(() => { if (isGamePlaying()) showGameAd({ force: true }); }, 5 * 60 * 1000);
   };
 })();
 
