@@ -1,5 +1,6 @@
 
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1355,6 +1356,11 @@ body.has-wallpaper::before{ opacity:0.5; }
   <input type="text" id="proxyAddress" placeholder="Search or enter URL..." autocomplete="off" spellcheck="false">
   <button type="button" class="proxy-go" id="proxyGoBtn">Go</button>
   <div class="proxy-actions">
+   <select id="proxyBackendQuick" title="Proxy backend" style="height:34px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-family:inherit;font-size:0.78em;font-weight:600;padding:0 8px;cursor:pointer;">
+     <option value="scramjet">Scramjet</option>
+     <option value="svg">SVG</option>
+     <option value="static">Static</option>
+   </select>
    <button class="modal-btn" id="proxyFullscreenBtn">Fullscreen</button>
    <button class="modal-btn" id="proxyCloseBtn">Close</button>
   </div>
@@ -1470,6 +1476,20 @@ body.has-wallpaper::before{ opacity:0.5; }
  <option value="plasma-drift">Plasma Drift</option>
  <option value="violet-tide">Violet Tide</option>
  </select>
+ </div>
+
+
+ <!-- PROXY BACKEND -->
+ <div class="settings-group">
+ <label>Proxy Backend</label>
+ <select id="setProxyBackend">
+ <option value="scramjet">Scramjet (default)</option>
+ <option value="svg">SVG bridge</option>
+ <option value="static">Static bridge</option>
+ </select>
+ <p class="locked-note">
+ Scramjet = built-in proxy (needs this site's /scram + /baremux files). SVG / Static = external bridge (works when Scramjet is blocked or missing). One address bar either way — no double Go buttons.
+ </p>
  </div>
 
  <!-- PANIC KEY FEATURE -->
@@ -1635,7 +1655,8 @@ const DEFAULTS = {
  confirmOnClose: true,
  confirmTabClose: false,
   autoAboutBlank: false,
- railPosition: 'left'
+ railPosition: 'left',
+ proxyBackend: 'scramjet'
 };
 
 const WALLPAPERS = {
@@ -3113,13 +3134,119 @@ function attachScramjetFrame(iframe) {
   }
 }
 
+/* ===== ALTERNATE PROXIES (SVG + Static) ===== */
+const ALT_PROXY_WS = 'wss://d1vajlb5xnngpm.cloudfront.net/api/';
+const ALT_PROXY_SVG_BRIDGE = 'https://cdn.jsdelivr.net/gh/lightspedfr/zakastatic@main/logo-b2b3e4d75f89f6104a35c1c7a5972ddd1be2cf72.svg';
+let _staticProxyBlobUrl = null;
+
+function altProxyEncode(str) {
+  return btoa(String(str)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function buildSvgProxyUrl(targetUrl) {
+  return ALT_PROXY_SVG_BRIDGE + '?w1=' + altProxyEncode(ALT_PROXY_WS) + '&go=' + altProxyEncode(targetUrl);
+}
+
+function buildStaticProxyShellHtml(targetUrl) {
+  var safeTarget = String(targetUrl || '').replace(/</g, '').replace(/"/g, '&quot;');
+  var initialSrc = targetUrl ? buildSvgProxyUrl(targetUrl) : 'about:blank';
+  initialSrc = String(initialSrc).replace(/"/g, '&quot;');
+  // Built with string concat so an inner script end-tag never closes the parent page script tag.
+  var parts = [];
+  parts.push('<!DOCTYPE html><html><head><meta charset="UTF-8">');
+  parts.push('<meta name="viewport" content="width=device-width, initial-scale=1.0">');
+  parts.push('<title>Axiom Static Proxy</title><style>');
+  parts.push('*{margin:0;padding:0;box-sizing:border-box}');
+  parts.push('body{background:#0f0f13;color:#fff;font-family:system-ui,-apple-system,sans-serif;height:100vh;display:flex;flex-direction:column}');
+  parts.push('.bar{padding:12px;background:#1a1a1f;display:flex;gap:8px}');
+  parts.push('input{flex:1;padding:10px 14px;border-radius:8px;border:none;outline:none;font-size:15px;background:#2a2a30;color:#fff}');
+  parts.push('button{padding:10px 16px;border-radius:8px;border:none;background:#8b6cff;color:#fff;font-weight:600;cursor:pointer}');
+  parts.push('button:hover{background:#a78bfa}');
+  parts.push('iframe{flex:1;width:100%;border:none;background:#000}');
+  parts.push('</style></head><body>');
+  parts.push('<div class="bar"><input id="url" placeholder="Enter URL or search..." value="' + safeTarget + '" autofocus>');
+  parts.push('<button onclick="go()">Go</button></div>');
+  parts.push('<iframe id="frame" src="' + initialSrc + '"></iframe>');
+  parts.push('<scr' + 'ipt>');
+  parts.push('var WS="wss://d1vajlb5xnngpm.cloudfront.net/api/";');
+  parts.push('var BRIDGE="https://cdn.jsdelivr.net/gh/lightspedfr/zakastatic@main/logo-b2b3e4d75f89f6104a35c1c7a5972ddd1be2cf72.svg";');
+  parts.push('function encode(str){return btoa(str).replace(/\\+/g,"-").replace(/\\//g,"_").replace(/=+$/,"");}');
+  parts.push('function go(){var val=document.getElementById("url").value.trim();if(!val)return;');
+  parts.push('if(!val.includes(".")||val.includes(" ")){val="https://duckduckgo.com/?q="+encodeURIComponent(val);}');
+  parts.push('else if(!val.startsWith("http")){val="https://"+val;}');
+  parts.push('document.getElementById("frame").src=BRIDGE+"?w1="+encode(WS)+"&go="+encode(val);');
+  parts.push('try{parent.postMessage({type:"axiom-static-nav",url:val},"*");}catch(e){}}');
+  parts.push('document.getElementById("url").addEventListener("keydown",function(e){if(e.key==="Enter")go();});');
+  parts.push('</scr' + 'ipt></body></html>');
+  return parts.join('');
+}
+
+function loadStaticProxyShell(iframe, targetUrl) {
+  if (!iframe) return false;
+  try {
+    if (_staticProxyBlobUrl) {
+      try { URL.revokeObjectURL(_staticProxyBlobUrl); } catch (_) {}
+      _staticProxyBlobUrl = null;
+    }
+    var blob = new Blob([buildStaticProxyShellHtml(targetUrl)], { type: 'text/html;charset=utf-8' });
+    _staticProxyBlobUrl = URL.createObjectURL(blob);
+    iframe.removeAttribute('srcdoc');
+    iframe.src = _staticProxyBlobUrl;
+    return true;
+  } catch (e) {
+    console.warn('[Axiom] Static proxy failed:', e);
+    return false;
+  }
+}
+
+function getProxyBackend() {
+  try {
+    var b = (settings && settings.proxyBackend) || 'scramjet';
+    if (b === 'svg' || b === 'static' || b === 'scramjet') return b;
+  } catch (_) {}
+  return 'scramjet';
+}
+
 function proxyNavigateFrame(iframe, url) {
   if (!iframe || !url) return false;
-  const frame = attachScramjetFrame(iframe);
+  var backend = getProxyBackend();
+
+  if (backend === 'svg') {
+    try {
+      iframe.removeAttribute('srcdoc');
+      iframe.src = buildSvgProxyUrl(url);
+      return true;
+    } catch (e) {
+      console.warn('[Axiom] SVG proxy navigation failed:', e);
+      return false;
+    }
+  }
+
+  if (backend === 'static') {
+    // Same bridge as SVG — no inner address bar (Axiom already has one Go button).
+    try {
+      iframe.removeAttribute('srcdoc');
+      iframe.src = buildSvgProxyUrl(url);
+      return true;
+    } catch (e) {
+      console.warn('[Axiom] Static proxy navigation failed:', e);
+      return false;
+    }
+  }
+
+  var frame = attachScramjetFrame(iframe);
   if (frame && typeof frame.go === 'function') {
     try { frame.go(url); return true; } catch (e) {
       console.warn('[Axiom] Scramjet navigation failed:', e);
     }
+  }
+  try {
+    iframe.removeAttribute('srcdoc');
+    iframe.src = buildSvgProxyUrl(url);
+    console.warn('[Axiom] Scramjet unavailable — fell back to SVG proxy');
+    return true;
+  } catch (e2) {
+    console.warn('[Axiom] SVG fallback failed:', e2);
   }
   return false;
 }
@@ -3205,7 +3332,8 @@ function navigateProxy(raw) {
   }
   const frame = currentFrame();
   if (!proxyNavigateFrame(frame, url)) {
-    showModalError('Proxy', 'The Scramjet proxy could not be initialized.');
+    const be = (typeof getProxyBackend === 'function' ? getProxyBackend() : 'scramjet');
+    showModalError('Proxy', be === 'svg' ? 'The SVG proxy could not load.' : be === 'static' ? 'The Static proxy could not load.' : 'The Scramjet proxy could not be initialized.');
     return;
   }
   syncActiveTab(url);
@@ -3255,6 +3383,10 @@ function openProxy(initialUrl, cleanMode) {
 
   resetProxyTabs();
   renderBookmarks();
+  try {
+    const bq = document.getElementById('proxyBackendQuick');
+    if (bq) bq.value = getProxyBackend();
+  } catch (_) {}
 
   // Show loading screen when opening the browser
   if (typeof showProxyLoadScreen === 'function' && !cleanMode) {
@@ -4252,6 +4384,8 @@ function openSettings() {
  if (aab) aab.checked = !!settings.autoAboutBlank;
  refreshHomeWallpaperUI();
  document.getElementById('setPanicUrl').value = settings.panicUrl || 'https://www.google.com';
+ const proxyBackendSel = document.getElementById('setProxyBackend');
+ if (proxyBackendSel) proxyBackendSel.value = settings.proxyBackend || 'scramjet';
  applySettings();
  panel.classList.add('open');
  overlay.classList.add('show');
@@ -4463,6 +4597,12 @@ document.getElementById('setWallpaper').onchange = e => { settings.wallpaper = e
 const railPosInput = document.getElementById('setRailPosition');
 if (railPosInput) railPosInput.onchange = e => { settings.railPosition = e.target.value; applyRailPosition(); saveSettings(); };
 document.getElementById('setPanicUrl').oninput = e => { settings.panicUrl = e.target.value; saveSettings(); };
+const proxyBackendEl = document.getElementById('setProxyBackend');
+if (proxyBackendEl) proxyBackendEl.onchange = e => {
+  settings.proxyBackend = e.target.value || 'scramjet';
+  saveSettings();
+  if (typeof showToast === 'function') showToast('Proxy: ' + (settings.proxyBackend === 'svg' ? 'SVG' : settings.proxyBackend === 'static' ? 'Static' : 'Scramjet'));
+};
 const confirmCloseEl = document.getElementById('setConfirmClose');
 if (confirmCloseEl) confirmCloseEl.onchange = e => { settings.confirmOnClose = e.target.checked; saveSettings(); };
 const confirmTabCloseEl = document.getElementById('setConfirmTabClose');
@@ -4585,6 +4725,17 @@ document.getElementById('closeBtn').onclick = closeModal;
 let proxyHistory = [];
 (function wireProxyBar() {
   renderBookmarks();
+  const backendQuick = document.getElementById('proxyBackendQuick');
+  if (backendQuick) {
+    backendQuick.value = (settings && settings.proxyBackend) || 'scramjet';
+    backendQuick.onchange = function () {
+      settings.proxyBackend = backendQuick.value || 'scramjet';
+      saveSettings();
+      const sel = document.getElementById('setProxyBackend');
+      if (sel) sel.value = settings.proxyBackend;
+      if (activeSessionUrl) navigateProxy(activeSessionUrl);
+    };
+  }
   const goBtn = document.getElementById('proxyGoBtn');
   const homeBtn = document.getElementById('proxyHomeBtn');
   const backBtn = document.getElementById('proxyBackBtn');
@@ -5587,5 +5738,57 @@ window.addEventListener('load', () => {
 
 <!-- Social Bar unit (SocialBar_1) -->
 <div id="axiomSocialBar" aria-label="Sponsored"></div>
+
+<script>
+/* Axiom click unblock - clears stuck overlays that steal clicks */
+(function () {
+  function force() {
+    try {
+      document.body.style.pointerEvents = 'auto';
+      document.documentElement.style.pointerEvents = 'auto';
+      var ad = document.getElementById('gameAdOverlay');
+      if (ad) {
+        ad.classList.remove('show');
+        ad.style.removeProperty('display');
+        ad.setAttribute('aria-hidden', 'true');
+        ad.style.pointerEvents = 'none';
+      }
+      var modal = document.getElementById('gameModal');
+      if (modal && !(modal.style.display === 'flex' && modal.classList.contains('open'))) {
+        modal.style.display = 'none';
+        modal.classList.remove('open');
+      }
+      document.querySelectorAll('.auth-modal.open, .proxy-warning-modal.open, .overlay.show, .level-overlay.show').forEach(function (el) {
+        el.classList.remove('open', 'show');
+      });
+      var apps = document.getElementById('appsPage');
+      if (apps) apps.classList.remove('open');
+      document.querySelectorAll('body > iframe, body > div').forEach(function (el) {
+        try {
+          var skipIds = ['gameModal','gameAdOverlay','appsPage','settingsPanel','settingsOverlay','levelOverlay','homeWallpaper','particles','achToast','axiomSocialBar','musicPill','authModal','proxyAnnouncementModal','viewHome','viewGames','viewChat','rail','frameStack','onlineFloat'];
+          if (el.id && skipIds.indexOf(el.id) !== -1) return;
+          if (el.classList && (el.classList.contains('rail') || el.classList.contains('view') || el.classList.contains('clock-float'))) return;
+          var st = window.getComputedStyle(el);
+          var z = parseInt(st.zIndex, 10) || 0;
+          var pos = st.position;
+          if ((pos === 'fixed' || pos === 'absolute') && z >= 1000) {
+            var w = el.offsetWidth, h = el.offsetHeight;
+            if (w >= window.innerWidth * 0.85 && h >= window.innerHeight * 0.85) {
+              el.style.pointerEvents = 'none';
+              el.style.display = 'none';
+            }
+          }
+        } catch (_) {}
+      });
+    } catch (_) {}
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', force, { once: true });
+  else force();
+  setTimeout(force, 100);
+  setTimeout(force, 500);
+  setTimeout(force, 1500);
+  setTimeout(force, 3000);
+})();
+</script>
 </body>
 </html>
