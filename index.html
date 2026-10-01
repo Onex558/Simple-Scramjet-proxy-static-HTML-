@@ -1,6 +1,7 @@
 
 
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -128,25 +129,30 @@ body::after{
 
 .rail{
   position: fixed;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
+  left: 50%;
+  right: auto;
+  top: auto;
+  bottom: 14px;
+  transform: translateX(-50%);
   z-index: 100;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 4px;
   padding: 10px;
   background: rgba(12,12,20,0.78);
   backdrop-filter: blur(20px) saturate(1.3);
   border: 1px solid rgba(var(--primary-rgb),0.15);
-  border-radius: 16px;
+  border-radius: 18px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.04);
-  min-width: 108px;
-  width: max-content;
-  max-height: 90vh;
-  overflow-y: auto;
+  min-width: 0;
+  width: fit-content;
+  max-width: calc(100vw - 28px);
+  max-height: none;
+  overflow: visible;
   scrollbar-width: none;
-  will-change: left, right, top, bottom, transform;
+  will-change: left, right, top, bottom, transform, opacity;
   transition:
     left .32s cubic-bezier(.22,1,.36,1),
     right .32s cubic-bezier(.22,1,.36,1),
@@ -154,7 +160,25 @@ body::after{
     bottom .32s cubic-bezier(.22,1,.36,1),
     transform .32s cubic-bezier(.22,1,.36,1),
     border-radius .24s ease,
-    box-shadow .24s ease;
+    box-shadow .24s ease,
+    opacity .25s ease,
+    visibility .25s ease;
+}
+/* Auto-hide bottom bar (shows again when you scroll down) */
+body.rail-hidden #rail,
+body.rail-hidden #railCollapseBtn,
+body.rail-hidden #railExpandBtn{
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+body.rail-hidden #rail{ transform: translateX(-50%) translateY(28px); }
+/* Peek when user scrolls down on games/chat — bar slides back in */
+body.rail-peek #rail{
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  transform: translateX(-50%) translateY(0) !important;
 }
 .rail::-webkit-scrollbar{ display:none; }
 .rail-group-btn{ justify-content: space-between !important; }
@@ -164,23 +188,20 @@ body::after{
 .rail-group-btn.open .chevron{ transform: rotate(90deg); opacity: .9; }
 .rail-group-btn.open{ color:#fff; }
 .rail-group{ display:none; }
-.rail-group.open{ display:contents; }
-.rail-group .rail-btn{ padding-left: 26px; font-size: 0.78em; }
-.rail-group .rail-btn::before{
-  content:''; position:absolute; left:14px; top:50%; transform:translateY(-50%);
-  width:6px; height:1px; background:rgba(255,255,255,0.25);
-}
+.rail-group.open{ display:flex; flex:1 1 100%; flex-wrap:wrap; gap:4px; justify-content:center; }
+.rail-group .rail-btn{ padding-left:12px; font-size: 0.78em; }
+.rail-group .rail-btn::before{ display:none; }
 .rail-btn{
-  width: 100%;
-  min-height: 40px;
-  padding: 10px 14px;
+  width: auto;
+  min-height: 36px;
+  padding: 8px 12px;
   border: 1px solid transparent;
   border-radius: 10px;
   background: transparent;
   color: rgba(255,255,255,0.65);
   cursor: pointer;
   display: flex; align-items: center; justify-content: flex-start;
-  font-size: 0.82em;
+  font-size: 0.78em;
   font-weight: 650;
   letter-spacing: 0.02em;
   transition: background .18s ease, color .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease;
@@ -202,23 +223,43 @@ body::after{
 .rail-btn .tip{ display: none !important; }
 .rail-ico{ width:15px; height:15px; margin-right:8px; flex-shrink:0; opacity:.9; }
 
-/* ===== SIDEBAR POSITION ===== */
-body.rail-pos-right #rail{ left:auto; right:14px; }
-body.rail-pos-right #railCollapseBtn, body.rail-pos-right #railExpandBtn{ left:auto; right:14px; }
-body.rail-pos-bottom #rail{
-  left:50%; right:auto; top:auto; bottom:14px;
-  transform:translateX(-50%);
-  flex-direction:row; flex-wrap:wrap; justify-content:center;
-  min-width:0; width:fit-content; max-width:calc(100vw - 28px); max-height:none; overflow:visible;
-  border-radius:18px;
+/* ===== SIDEBAR POSITION (locked to bottom in redesign) ===== */
+#railCollapseBtn{ display:none !important; }
+#railExpandBtn{ display:none !important; }
+
+/* Top-right settings button */
+#topSettingsBtn{
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 110;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid rgba(var(--primary-rgb),0.25);
+  background: rgba(12,12,20,0.78);
+  backdrop-filter: blur(16px) saturate(1.3);
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  transition: background .18s, border-color .18s, transform .18s, box-shadow .18s;
+  font-family: inherit;
+  padding: 0;
 }
-body.rail-pos-bottom .rail-btn{ width:auto; min-height:36px; padding:8px 12px; }
-body.rail-pos-bottom .rail-group{ display:none; }
-body.rail-pos-bottom .rail-group.open{ display:flex; flex:1 1 100%; flex-wrap:wrap; gap:4px; justify-content:center; }
-body.rail-pos-bottom .rail-group .rail-btn{ padding-left:12px; }
-body.rail-pos-bottom .rail-group .rail-btn::before{ display:none; }
-body.rail-pos-bottom #railCollapseBtn{ display:none !important; }
-body.rail-pos-bottom #railExpandBtn{ left:14px; right:auto; bottom:14px; }
+#topSettingsBtn:hover{
+  background: rgba(var(--primary-rgb),0.18);
+  border-color: rgba(var(--primary-rgb),0.5);
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 28px rgba(0,0,0,0.45), 0 0 16px rgba(var(--primary-rgb),0.15);
+}
+#topSettingsBtn svg{ width: 20px; height: 20px; }
+body.rail-hidden #topSettingsBtn{ opacity: 0.85; }
+/* Keep settings accessible even in fullscreen views */
+#topSettingsBtn{ pointer-events: auto; }
 
 .view{ display:none; position:relative; z-index:1; min-height:100vh; }
 .view.active{ display:flex; }
@@ -227,7 +268,7 @@ body.rail-pos-bottom #railExpandBtn{ left:14px; right:auto; bottom:14px; }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px 20px 80px 140px;
+  padding: 40px 20px 100px 20px;
   text-align: center;
 }
 .welcome{
@@ -309,7 +350,7 @@ body.rail-pos-bottom #railExpandBtn{ left:14px; right:auto; bottom:14px; }
 }
 .online-float{
   position: fixed;
-  top: 18px; right: 18px;
+  top: 18px; left: 18px; right: auto;
   z-index: 90;
   display: inline-flex; align-items: center; gap: 8px;
   padding: 8px 14px;
@@ -341,7 +382,7 @@ body.rail-pos-bottom #railExpandBtn{ left:14px; right:auto; bottom:14px; }
 
 #viewGames{
   flex-direction: column;
-  padding: 72px 28px 48px 150px;
+  padding: 72px 28px 48px 28px;
   gap: 0;
 }
 .games-header{
@@ -1145,31 +1186,24 @@ body.has-wallpaper::before{ opacity:0.5; }
 <p id="mainTagline" style="display:none">Play instantly. No limits.</p>
 
 
+<!-- Top-right settings gear -->
+<button type="button" id="topSettingsBtn" title="Settings" aria-label="Open settings">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="3"/>
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+  </svg>
+</button>
+<!-- hidden legacy openSettings id for JS compatibility -->
+<button type="button" id="openSettings" style="display:none" aria-hidden="true"></button>
+
 <nav class="rail" id="rail">
   <button type="button" class="rail-btn active" data-view="home" id="railHome">Home</button>
   <button type="button" class="rail-btn" data-view="games" id="railGames">Games</button>
   <button type="button" class="rail-btn" id="railProxyBtn" onclick="openProxy()">Browser</button>
   <button type="button" class="rail-btn" id="railLinksBtn" onclick="window.open('https://sites..com/view/allabouturanium', '_blank', 'noopener,noreferrer')"><svg class="rail-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Links</button>
-
-  <button type="button" class="rail-btn rail-group-btn" data-group="mediaGroup" aria-expanded="false">Media<span class="chevron">&#10095;</span></button>
-  <div class="rail-group" id="mediaGroup">
-    <button type="button" class="rail-btn" id="railMusicBtn" onclick="openProxy('https://soundcloud.com/', true)">Music</button>
-    <button type="button" class="rail-btn" id="railMoviesBtn" onclick="openProxy('https://www.justwatch.com/us/movies', true)">Movies</button>
-  </div>
-
-  <button type="button" class="rail-btn rail-group-btn" data-group="toolsGroup" aria-expanded="false">Tools<span class="chevron">&#10095;</span></button>
-  <div class="rail-group" id="toolsGroup">
-    <button type="button" class="rail-btn" id="railAiBtn" onclick="openApp('Axiom AI', 'https://script.google.com/macros/s/AKfycbxpMnvwaEZP6cgFu2ci_GA_7XYFM4FU4I24FfkeU2vGCiULjHfD2lqiDeZFJCNSg9GV/exec')">Axiom AI</button>
-    <button type="button" class="rail-btn" id="appsBtn">Apps</button>
-    <button type="button" class="rail-btn" data-view="chat" id="railChat" onclick="window.showView&&window.showView('chat')">Chat</button>
-    <button type="button" class="rail-btn" id="downloadSiteBtn">download the site nowww!!!</button>
-  </div>
-
-  <button type="button" class="rail-btn rail-group-btn" data-group="accountGroup" aria-expanded="false">Account<span class="chevron">&#10095;</span></button>
-  <div class="rail-group" id="accountGroup">
-    <button type="button" class="rail-btn" id="railAccount">Account</button>
-    <button type="button" class="rail-btn" id="openSettings">Settings</button>
-  </div>
+  <button type="button" class="rail-btn" id="appsBtn">Apps</button>
+  <button type="button" class="rail-btn" id="railAccount">Account</button>
+  <button type="button" class="rail-btn" id="downloadSiteBtn">Download</button>
 </nav>
 <!-- APPS PAGE -->
 <div id="appsPage" aria-hidden="true">
@@ -1183,8 +1217,8 @@ body.has-wallpaper::before{ opacity:0.5; }
   </button>
 </div>
 
-<button type="button" id="railCollapseBtn" title="Hide menu" aria-label="Hide menu">&#10094; HIDE</button>
-<button type="button" id="railExpandBtn" title="Show menu" aria-label="Show menu">&#10095;</button>
+<button type="button" id="railCollapseBtn" title="Hide menu" aria-label="Hide menu" style="display:none">&#10094; HIDE</button>
+<button type="button" id="railExpandBtn" title="Show menu" aria-label="Show menu" style="display:none">&#10095;</button>
 
 <!-- HOME -->
 <div id="homeWallpaper" aria-hidden="true"></div>
@@ -1448,15 +1482,14 @@ body.has-wallpaper::before{ opacity:0.5; }
  </p>
  </div>
 
- <!-- SIDEBAR POSITION -->
- <div class="settings-group">
+ <!-- SIDEBAR POSITION (locked to bottom in redesign — control kept hidden for JS compat) -->
+ <div class="settings-group" style="display:none" aria-hidden="true">
  <label>Sidebar Position</label>
  <select id="setRailPosition">
  <option value="left">Left</option>
  <option value="right">Right</option>
- <option value="bottom">Bottom</option>
+ <option value="bottom" selected>Bottom</option>
  </select>
- <p class="locked-note">Choose where the menu sits on the screen.</p>
  </div>
 
  <!-- WALLPAPER SELECTION -->
@@ -1655,7 +1688,7 @@ const DEFAULTS = {
  confirmOnClose: true,
  confirmTabClose: false,
   autoAboutBlank: false,
- railPosition: 'left',
+ railPosition: 'bottom',
  proxyBackend: 'scramjet'
 };
 
@@ -2216,9 +2249,10 @@ function refreshHomeWallpaperUI() {
 }
 
 function applyRailPosition() {
-  const pos = settings.railPosition || 'left';
+  // Redesign: sidebar is always bottom
+  settings.railPosition = 'bottom';
   document.body.classList.remove('rail-pos-left', 'rail-pos-right', 'rail-pos-bottom');
-  document.body.classList.add('rail-pos-' + pos);
+  document.body.classList.add('rail-pos-bottom');
 }
 
 function applySettings() {
@@ -3902,6 +3936,7 @@ function prepareGameModal(name) {
   gameModal.style.display = 'flex';
   document.body.style.overflow = 'hidden';
   gameModal.classList.add('open');
+  document.body.classList.add('rail-hidden');
   resetModalChrome();
   showModalChrome();
   clearTimeout(modalChromeHideTimer);
@@ -4109,6 +4144,13 @@ function closeModal() {
  if (document.fullscreenElement) {
  document.exitFullscreen().catch(() => {});
  }
+ // Restore bottom rail only if we are on Home
+ try {
+   const active = document.querySelector('.view.active');
+   const viewName = active && active.id === 'viewGames' ? 'games' : (active && active.id === 'viewChat' ? 'chat' : 'home');
+   if (typeof updateRailVisibility === 'function') updateRailVisibility(viewName);
+   else document.body.classList.toggle('rail-hidden', viewName !== 'home');
+ } catch (_) {}
 }
 
 document.getElementById('fullscreenBtn').onclick = () => {
@@ -4397,6 +4439,8 @@ function closeSettings() {
 }
 
 document.getElementById('openSettings').onclick = openSettings;
+const topSettingsBtn = document.getElementById('topSettingsBtn');
+if (topSettingsBtn) topSettingsBtn.onclick = openSettings;
 document.getElementById('closeSettings').onclick = closeSettings;
 overlay.onclick = closeSettings;
 
@@ -4474,6 +4518,8 @@ if (sourceBtn && sourceDropdown) {
 
 /* ========== APPS PAGE ========== */
 const APPS = [
+ { name:'Chat',        action:'chat',  icon:'https://www.google.com/s2/favicons?sz=256&domain=discord.com' },
+ { name:'Axiom AI',    url:'https://script.google.com/macros/s/AKfycbxpMnvwaEZP6cgFu2ci_GA_7XYFM4FU4I24FfkeU2vGCiULjHfD2lqiDeZFJCNSg9GV/exec', icon:'https://www.google.com/s2/favicons?sz=256&domain=google.com' },
  { name:'Roblox',      url:'https://www.roblox.com/',            icon:'https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Roblox_2022_Logo.png/128px-Roblox_2022_Logo.png' },
  { name:'Snapchat',    url:'https://web.snapchat.com/',          icon:'https://www.google.com/s2/favicons?sz=256&domain=snapchat.com' },
  { name:'TikTok',      url:'https://www.tiktok.com/',            icon:'https://www.google.com/s2/favicons?sz=256&domain=tiktok.com' },
@@ -4508,8 +4554,12 @@ function renderApps(filter) {
                 '<span class="app-name">' + a.name + '</span>';
   t.onclick = () => {
    closeAppsPage();
+   if (a.action === 'chat') {
+     if (typeof showView === 'function') showView('chat');
+     return;
+   }
    if (a.newTab) window.open(a.url, '_blank', 'noopener,noreferrer');
-   else openProxy(a.url, true);
+   else if (a.url) openProxy(a.url, true);
   };
   appsGrid.appendChild(t);
  });
@@ -4519,6 +4569,7 @@ function openAppsPage() {
  appsPage.classList.add('open');
  appsPage.setAttribute('aria-hidden', 'false');
  document.body.style.overflow = 'hidden';
+ document.body.classList.add('rail-hidden');
  if (appsSearch) setTimeout(() => appsSearch.focus(), 60);
 }
 function closeAppsPage() {
@@ -4526,6 +4577,12 @@ function closeAppsPage() {
  appsPage.classList.remove('open');
  appsPage.setAttribute('aria-hidden', 'true');
  document.body.style.overflow = '';
+ try {
+   const active = document.querySelector('.view.active');
+   const viewName = active && active.id === 'viewGames' ? 'games' : (active && active.id === 'viewChat' ? 'chat' : 'home');
+   if (typeof updateRailVisibility === 'function') updateRailVisibility(viewName);
+   else document.body.classList.toggle('rail-hidden', viewName !== 'home');
+ } catch (_) {}
 }
 if (appsBtn) appsBtn.onclick = (e) => { e.stopPropagation(); openAppsPage(); };
 if (appsCloseBtn) appsCloseBtn.onclick = () => closeAppsPage();
@@ -4805,6 +4862,81 @@ document.querySelectorAll('.proxy-shortcut').forEach(button => {
 });
 
 
+let __railScrollY = 0;
+let __railPeekTimer = null;
+
+function updateRailVisibility(viewName) {
+  // Modal / apps page: always hide bar
+  const modalOpen = document.getElementById('gameModal') && document.getElementById('gameModal').classList.contains('open');
+  const appsOpen = document.getElementById('appsPage') && document.getElementById('appsPage').classList.contains('open');
+  if (modalOpen || appsOpen) {
+    document.body.classList.add('rail-hidden');
+    document.body.classList.remove('rail-peek');
+    return;
+  }
+  // Home: always show bar
+  if (viewName === 'home') {
+    document.body.classList.remove('rail-hidden', 'rail-peek');
+    return;
+  }
+  // Games / Chat: hide by default; scroll-down peeks it back
+  document.body.classList.add('rail-hidden');
+  document.body.classList.remove('rail-peek');
+}
+
+function wireRailScrollPeek() {
+  if (window.__railScrollWired) return;
+  window.__railScrollWired = true;
+  window.addEventListener('scroll', function () {
+    try {
+      const modal = document.getElementById('gameModal');
+      if (modal && modal.classList.contains('open')) return;
+      const apps = document.getElementById('appsPage');
+      if (apps && apps.classList.contains('open')) return;
+      const active = document.querySelector('.view.active');
+      if (!active || active.id === 'viewHome') return;
+      // only on games / chat
+      const y = window.scrollY || document.documentElement.scrollTop || 0;
+      const goingDown = y > __railScrollY + 4;
+      const goingUp = y < __railScrollY - 4;
+      __railScrollY = y;
+      if (goingDown) {
+        document.body.classList.add('rail-peek');
+        clearTimeout(__railPeekTimer);
+        __railPeekTimer = setTimeout(function () {
+          // stay visible a bit, then hide again if still not home
+          const stillAway = document.querySelector('.view.active');
+          if (stillAway && stillAway.id !== 'viewHome') {
+            document.body.classList.remove('rail-peek');
+          }
+        }, 2200);
+      } else if (goingUp) {
+        document.body.classList.remove('rail-peek');
+        clearTimeout(__railPeekTimer);
+      }
+    } catch (_) {}
+  }, { passive: true });
+  // Also peek when mouse is near bottom edge
+  document.addEventListener('mousemove', function (e) {
+    try {
+      const modal = document.getElementById('gameModal');
+      if (modal && modal.classList.contains('open')) return;
+      const apps = document.getElementById('appsPage');
+      if (apps && apps.classList.contains('open')) return;
+      const active = document.querySelector('.view.active');
+      if (!active || active.id === 'viewHome') return;
+      const nearBottom = e.clientY > (window.innerHeight - 72);
+      if (nearBottom) {
+        document.body.classList.add('rail-peek');
+        clearTimeout(__railPeekTimer);
+        __railPeekTimer = setTimeout(function () {
+          document.body.classList.remove('rail-peek');
+        }, 1800);
+      }
+    } catch (_) {}
+  }, { passive: true });
+}
+
 function showView(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   let el = null;
@@ -4826,8 +4958,11 @@ function showView(name) {
     const box = document.getElementById('chatMessages');
     if (box) box.scrollTop = box.scrollHeight;
   }
+  updateRailVisibility(name);
 }
 window.showView = showView;
+window.updateRailVisibility = updateRailVisibility;
+wireRailScrollPeek();
 
 (function wireRailAndHomeProxy() {
   document.querySelectorAll('.rail-btn[data-view]').forEach(btn => {
@@ -5372,7 +5507,7 @@ window.addEventListener('load', () => {
       .auth-field input{box-sizing:border-box;width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--border,rgba(255,255,255,.1));background:var(--bg,#05050a);color:var(--text,#fff);font-family:inherit;font-size:.95em;outline:none}
       .auth-submit{width:100%;padding:12px;border:none;border-radius:12px;background:var(--primary,#8b6cff);color:#fff;font-weight:800;font-family:inherit;cursor:pointer;font-size:.95em}
       .auth-error{color:#ff6b6b;font-size:.82em;margin:0 0 10px}
-      #viewChat{flex-direction:column;padding:72px 28px 48px 150px;gap:0}
+      #viewChat{flex-direction:column;padding:72px 28px 48px 28px;gap:0}
       @media(max-width:700px){#viewChat{padding:16px 12px 110px}}
       .chat-shell{display:flex;flex-direction:column;height:min(78vh,720px);background:rgba(12,12,20,.55);border:1px solid var(--border,rgba(255,255,255,.07));border-radius:18px;overflow:hidden}
       .chat-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;border-bottom:1px solid var(--border,rgba(255,255,255,.07));flex-wrap:wrap}
