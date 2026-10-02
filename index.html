@@ -4048,8 +4048,69 @@ function openApp(name, url) {
   if (settings.openAboutBlank) {
     openInAboutBlankWindow(name, url, false);
   } else {
-    openInModal(name, url);
+    openDirectApp(name, url);
   }
+}
+
+/** Plain iframe modal — no proxy, no music-mode, cannot navigate parent to home */
+function openDirectApp(name, url) {
+  if (!url) return;
+  var target = String(url).trim();
+  activeSessionName = name || 'App';
+  activeSessionUrl = target;
+
+  proxyMode = false;
+  if (typeof showProxyBar === 'function') showProxyBar(false);
+  gameModal.classList.remove('proxy-mode', 'music-mode', 'music-minimized', 'proxy-home-active');
+  if (typeof showMusicPill === 'function') showMusicPill(false);
+  if (typeof showProxyHome === 'function') showProxyHome(false);
+
+  if (typeof hideModalError === 'function') hideModalError();
+  try { gameFrame.removeAttribute('srcdoc'); } catch (e) {}
+
+  // Prevent iframe from navigating the top page (frame-bust -> home)
+  try {
+    gameFrame.setAttribute(
+      'sandbox',
+      'allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-downloads allow-pointer-lock'
+    );
+  } catch (e) {}
+
+  gameFrame.style.display = 'block';
+  gameFrame.style.visibility = 'visible';
+  gameFrame.style.opacity = '1';
+
+  gameModal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  gameModal.classList.add('open');
+  document.body.classList.add('rail-hidden');
+  if (typeof resetModalChrome === 'function') resetModalChrome();
+  if (typeof showModalChrome === 'function') showModalChrome();
+  try {
+    clearTimeout(modalChromeHideTimer);
+    modalChromeHideTimer = setTimeout(function () {
+      if (typeof hideModalChrome === 'function') hideModalChrome();
+    }, 2500);
+  } catch (e) {}
+
+  if (typeof showProxyLoadScreen === 'function') showProxyLoadScreen(name || 'App');
+
+  var frameLoaded = false;
+  gameFrame.onload = function () {
+    frameLoaded = true;
+    if (typeof hideProxyLoadScreen === 'function') hideProxyLoadScreen();
+  };
+  gameFrame.onerror = function () {
+    if (frameLoaded) return;
+    if (typeof hideProxyLoadScreen === 'function') hideProxyLoadScreen();
+    if (typeof showModalError === 'function') {
+      showModalError(name || 'App', 'Could not load in an iframe.');
+    }
+  };
+  gameFrame.src = target;
+  setTimeout(function () {
+    if (typeof hideProxyLoadScreen === 'function') hideProxyLoadScreen();
+  }, 10000);
 }
 
 function openGameInAboutBlank(name, url) {
@@ -4080,19 +4141,9 @@ function openInModal(name, url, game) {
 
   showProxyLoadScreen(name);
 
-  // Sources that can load directly use the real URL in the iframe.
+  // Direct iframe — no proxy fallback
   if (game && game.directFrame) {
-    let frameLoaded = false;
-    gameFrame.removeAttribute('srcdoc');
-    gameFrame.onload = () => { frameLoaded = true; hideProxyLoadScreen(); };
-    gameFrame.src = target;
-    setTimeout(() => {
-      hideProxyLoadScreen();
-      if (frameLoaded) return;
-      if (!gameModal.classList.contains('open')) return;
-      console.warn('[Axiom] direct frame stalled, switching to proxy:', target);
-      try { gameFrame.src = buildProxySrc(target); } catch (_) {}
-    }, 8000);
+    openDirectApp(name, target);
     return;
   }
 
@@ -4519,7 +4570,7 @@ if (sourceBtn && sourceDropdown) {
 /* ========== APPS PAGE ========== */
 const APPS = [
  { name:'Chat',        action:'chat',  icon:'https://www.google.com/s2/favicons?sz=256&domain=discord.com' },
- { name:'Axiom AI',    url:'https://script.google.com/macros/s/AKfycbxpMnvwaEZP6cgFu2ci_GA_7XYFM4FU4I24FfkeU2vGCiULjHfD2lqiDeZFJCNSg9GV/exec', icon:'https://www.google.com/s2/favicons?sz=256&domain=google.com' },
+ { name:'Axiom AI',    url:'https://script.google.com/macros/s/AKfycbxpMnvwaEZP6cgFu2ci_GA_7XYFM4FU4I24FfkeU2vGCiULjHfD2lqiDeZFJCNSg9GV/exec', icon:'https://www.google.com/s2/favicons?sz=256&domain=google.com', direct: true },
  { name:'Roblox',      url:'https://www.roblox.com/',            icon:'https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Roblox_2022_Logo.png/128px-Roblox_2022_Logo.png' },
  { name:'Snapchat',    url:'https://web.snapchat.com/',          icon:'https://www.google.com/s2/favicons?sz=256&domain=snapchat.com' },
  { name:'TikTok',      url:'https://www.tiktok.com/',            icon:'https://www.google.com/s2/favicons?sz=256&domain=tiktok.com' },
@@ -4553,13 +4604,26 @@ function renderApps(filter) {
   t.innerHTML = '<span class="app-icon-wrap"><img src="' + a.icon + '" alt="' + a.name + '" loading="lazy" onerror="this.style.display=\'none\'"></span>' +
                 '<span class="app-name">' + a.name + '</span>';
   t.onclick = () => {
-   closeAppsPage();
    if (a.action === 'chat') {
+     closeAppsPage();
      if (typeof showView === 'function') showView('chat');
      return;
    }
-   if (a.newTab) window.open(a.url, '_blank', 'noopener,noreferrer');
-   else if (a.url) openProxy(a.url, true);
+   if (a.newTab) {
+     closeAppsPage();
+     window.open(a.url, '_blank', 'noopener,noreferrer');
+     return;
+   }
+   if (a.direct && a.url) {
+     openDirectApp(a.name, a.url);
+     closeAppsPage();
+     return;
+   }
+   if (a.url) {
+     // false = normal browser, NOT music-mode (music-mode has a Home button)
+     openProxy(a.url, false);
+     closeAppsPage();
+   }
   };
   appsGrid.appendChild(t);
  });
@@ -4576,10 +4640,16 @@ function closeAppsPage() {
  if (!appsPage) return;
  appsPage.classList.remove('open');
  appsPage.setAttribute('aria-hidden', 'true');
+ var modalOpen = gameModal && gameModal.style.display === 'flex' && gameModal.classList.contains('open');
+ if (modalOpen) {
+   document.body.style.overflow = 'hidden';
+   document.body.classList.add('rail-hidden');
+   return;
+ }
  document.body.style.overflow = '';
  try {
-   const active = document.querySelector('.view.active');
-   const viewName = active && active.id === 'viewGames' ? 'games' : (active && active.id === 'viewChat' ? 'chat' : 'home');
+   var active = document.querySelector('.view.active');
+   var viewName = active && active.id === 'viewGames' ? 'games' : (active && active.id === 'viewChat' ? 'chat' : 'home');
    if (typeof updateRailVisibility === 'function') updateRailVisibility(viewName);
    else document.body.classList.toggle('rail-hidden', viewName !== 'home');
  } catch (_) {}
