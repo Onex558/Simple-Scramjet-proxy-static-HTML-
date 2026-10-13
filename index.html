@@ -1392,6 +1392,7 @@ body.has-wallpaper::before{ opacity:0.5; }
   <div class="proxy-actions">
    <select id="proxyBackendQuick" title="Proxy backend" style="height:34px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-family:inherit;font-size:0.78em;font-weight:600;padding:0 8px;cursor:pointer;">
      <option value="scramjet">Scramjet</option>
+     <option value="ultraviolet">Ultraviolet</option>
      <option value="svg">SVG</option>
      <option value="static">Static</option>
    </select>
@@ -1517,11 +1518,12 @@ body.has-wallpaper::before{ opacity:0.5; }
  <label>Proxy Backend</label>
  <select id="setProxyBackend">
  <option value="scramjet">Scramjet (default)</option>
+ <option value="ultraviolet">Ultraviolet</option>
  <option value="svg">SVG bridge</option>
  <option value="static">Static bridge</option>
  </select>
  <p class="locked-note">
- Scramjet = built-in proxy (needs this site's /scram + /baremux files). SVG / Static = external bridge (works when Scramjet is blocked or missing). One address bar either way — no double Go buttons.
+ Scramjet = built-in proxy (BareMux + Zaka Wisp servers). Ultraviolet = real UV only when this page is hosted with /uv/ files; otherwise it uses the Zaka SVG bridge so it still works (never file:///uv/...). SVG / Static = external Zaka bridge. One address bar either way.
  </p>
  </div>
 
@@ -1991,7 +1993,6 @@ const customGames = [
  { name:"Helen Keller SIM", author:"Aciom Studios", resolvedCover:"https://cdn.jsdelivr.net/gh/Onex558/uranium-source-@main/images/helenkellenbelenimg.png", resolvedUrl:"https://cdn.jsdelivr.net/gh/Onex558/Mathisfunallfiles@main/Hellenkellensim.html" },
 
  { name:"Ratatouille", author:"Disney Games", resolvedCover:"https://cdn.jsdelivr.net/gh/Onex558/uranium-source-@main/images/Ratatouilleiamge.jpg", resolvedUrl:"https://cdn.jsdelivr.net/gh/Onex558/retro-games-@main/RatatouilleNDS.html" },
- { name:"Cat stacker ", author:"I ready Games", resolvedCover:"https://cdn.jsdelivr.net/gh/Onex558/uranium-source-@main/images/My_Stuff_Rewards%252C_i-Ready_-_Google_Chrome_5_12_2022_10_17_47_PMeeeeeeeee.webp", resolvedUrl:"https://cdn.i-ready.com/instruction/game-catstacker/1.6.x/2/" },
 
 
  { name:"Doom 64", author:"Midway Games", resolvedCover:"https://cdn.jsdelivr.net/gh/Onex558/uranium-source-@main/images/doom_64_box.jpg", resolvedUrl:"https://cdn.jsdelivr.net/gh/Onex558/uranium-source-@main/doom64.html" },
@@ -2595,11 +2596,28 @@ async function fetch3kh0Source() {
 
 async function fetchNoahSource() {
  try {
-  const url = 'https://cdn.jsdelivr.net/gh/Onex558/uranium-source-@main/nth.js?t=' + Date.now();
-  const sourceBase = url.split('?')[0];
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  const text = await res.text();
+  // Official updated Noah's Tutoring Hub catalog (js/games.js)
+  const NOAH_GAMES_URLS = [
+    'https://cdn.jsdelivr.net/gh/NoahsAmazingTutoringHelp/Noahs-Calculus-Tutor@master/js/games.js?t=' + Date.now(),
+    'https://raw.githubusercontent.com/NoahsAmazingTutoringHelp/Noahs-Calculus-Tutor/master/js/games.js?t=' + Date.now(),
+    // legacy fallback
+    'https://cdn.jsdelivr.net/gh/Onex558/uranium-source-@main/nth.js?t=' + Date.now()
+  ];
+  let text = null;
+  let sourceBase = '';
+  let lastErr = null;
+  for (const url of NOAH_GAMES_URLS) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      text = await res.text();
+      sourceBase = url.split('?')[0];
+      break;
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  if (!text) throw lastErr || new Error('Could not fetch Noah games');
   const match = text.match(/const\s+games\s*=\s*(\[[\s\S]*?\]);/);
   if (!match) throw new Error('Could not parse games array');
   const data = (new Function('return ' + match[1]))();
@@ -3122,10 +3140,16 @@ try {
 try {
   if (typeof BareMux !== 'undefined' && BareMux.BareMuxConnection) {
     const axiomBareMux = new BareMux.BareMuxConnection('/baremux/worker.js');
-    const axiomWisp =
-      localStorage.getItem('proxServer') ||
-      'wss://gointospace.app/wisp/';
+    // Zaka / community Wisp servers (same family as the SVG bridge). Keep local override.
+    const ZAKA_WISPS = [
+      'wss://d1vajlb5xnngpm.cloudfront.net/api/',
+      'wss://wisp.mercurywork.shop/',
+      'wss://gointospace.app/wisp/'
+    ];
+    let axiomWisp = localStorage.getItem('proxServer') || localStorage.getItem('axiomWisp') || ZAKA_WISPS[0];
+    if (!/^wss?:\/\//i.test(axiomWisp)) axiomWisp = ZAKA_WISPS[0];
     axiomBareMux.setTransport('/epoxy/index.mjs', [{ wisp: axiomWisp }]);
+    try { window.__axiomWisp = axiomWisp; } catch (_) {}
   }
 } catch (e) {
   console.warn('[Axiom] BareMux initialization failed:', e);
@@ -3237,9 +3261,58 @@ function loadStaticProxyShell(iframe, targetUrl) {
 function getProxyBackend() {
   try {
     var b = (settings && settings.proxyBackend) || 'scramjet';
-    if (b === 'svg' || b === 'static' || b === 'scramjet') return b;
+    if (b === 'svg' || b === 'static' || b === 'scramjet' || b === 'ultraviolet') return b;
   } catch (_) {}
   return 'scramjet';
+}
+
+/* Ultraviolet helpers.
+   Real UV needs an HTTPS host that serves /uv/ + a service worker.
+   Opening this HTML as a local file (file://) cannot use /uv/service/ — that becomes file:///uv/...
+   In that case we route through the Zaka SVG bridge (same Wisp family) so browsing still works. */
+function uvEncodeUrl(url) {
+  try {
+    if (typeof Ultraviolet !== 'undefined' && Ultraviolet.codec && Ultraviolet.codec.xor) {
+      return Ultraviolet.codec.xor.encode(url);
+    }
+  } catch (_) {}
+  try {
+    var str = String(url);
+    var out = '';
+    for (var i = 0; i < str.length; i++) {
+      out += i % 2 ? String.fromCharCode(str.charCodeAt(i) ^ 2) : str[i];
+    }
+    return encodeURIComponent(out);
+  } catch (_) {
+    return encodeURIComponent(url);
+  }
+}
+
+function canUseLocalUltraviolet() {
+  try {
+    if (location.protocol === 'file:') return false;
+    if (window.__uv$config && window.__uv$config.prefix) return true;
+    // Same-origin UV is only useful when the page is served over http(s)
+    return location.protocol === 'http:' || location.protocol === 'https:';
+  } catch (_) {
+    return false;
+  }
+}
+
+function buildUltravioletProxyUrl(targetUrl) {
+  // If UV is not hostable here, use Zaka SVG bridge (works offline / single-file / Google Script)
+  if (!canUseLocalUltraviolet()) {
+    return buildSvgProxyUrl(targetUrl);
+  }
+  var base = (window.__uv$config && window.__uv$config.prefix)
+    ? window.__uv$config.prefix
+    : (location.origin + '/uv/service/');
+  if (!base.endsWith('/')) base += '/';
+  // Always absolute — never relative, so we never get file:///uv/service/...
+  if (base.charAt(0) === '/') {
+    try { base = location.origin + base; } catch (_) {}
+  }
+  return base + uvEncodeUrl(targetUrl);
 }
 
 function proxyNavigateFrame(iframe, url) {
@@ -3266,6 +3339,41 @@ function proxyNavigateFrame(iframe, url) {
     } catch (e) {
       console.warn('[Axiom] Static proxy navigation failed:', e);
       return false;
+    }
+  }
+
+  if (backend === 'ultraviolet') {
+    try {
+      iframe.removeAttribute('srcdoc');
+      // Uses real /uv/service/ only on an https host that has UV files.
+      // Otherwise Zaka SVG bridge (same Wisp servers) — never file:///uv/...
+      var uvSrc = buildUltravioletProxyUrl(url);
+      if (!canUseLocalUltraviolet() && typeof showToast === 'function') {
+        // only toast once per session
+        if (!window.__uvFallbackToast) {
+          window.__uvFallbackToast = true;
+          showToast('UV needs a host with /uv/ — using Zaka proxy');
+        }
+      }
+      iframe.src = uvSrc;
+      return true;
+    } catch (e) {
+      console.warn('[Axiom] Ultraviolet navigation failed:', e);
+      try {
+        var frameUv = attachScramjetFrame(iframe);
+        if (frameUv && typeof frameUv.go === 'function') {
+          frameUv.go(url);
+          console.warn('[Axiom] UV unavailable — fell back to Scramjet');
+          return true;
+        }
+      } catch (_) {}
+      try {
+        iframe.src = buildSvgProxyUrl(url);
+        return true;
+      } catch (e2) {
+        console.warn('[Axiom] UV+SVG fallback failed:', e2);
+        return false;
+      }
     }
   }
 
@@ -3368,7 +3476,7 @@ function navigateProxy(raw) {
   const frame = currentFrame();
   if (!proxyNavigateFrame(frame, url)) {
     const be = (typeof getProxyBackend === 'function' ? getProxyBackend() : 'scramjet');
-    showModalError('Proxy', be === 'svg' ? 'The SVG proxy could not load.' : be === 'static' ? 'The Static proxy could not load.' : 'The Scramjet proxy could not be initialized.');
+    showModalError('Proxy', be === 'svg' ? 'The SVG proxy could not load.' : be === 'static' ? 'The Static proxy could not load.' : be === 'ultraviolet' ? 'The Ultraviolet proxy could not load (host needs /uv/ files).' : 'The Scramjet proxy could not be initialized.');
     return;
   }
   syncActiveTab(url);
@@ -4729,7 +4837,7 @@ const proxyBackendEl = document.getElementById('setProxyBackend');
 if (proxyBackendEl) proxyBackendEl.onchange = e => {
   settings.proxyBackend = e.target.value || 'scramjet';
   saveSettings();
-  if (typeof showToast === 'function') showToast('Proxy: ' + (settings.proxyBackend === 'svg' ? 'SVG' : settings.proxyBackend === 'static' ? 'Static' : 'Scramjet'));
+  if (typeof showToast === 'function') showToast('Proxy: ' + (settings.proxyBackend === 'svg' ? 'SVG' : settings.proxyBackend === 'static' ? 'Static' : settings.proxyBackend === 'ultraviolet' ? 'Ultraviolet' : 'Scramjet'));
 };
 const confirmCloseEl = document.getElementById('setConfirmClose');
 if (confirmCloseEl) confirmCloseEl.onchange = e => { settings.confirmOnClose = e.target.checked; saveSettings(); };
