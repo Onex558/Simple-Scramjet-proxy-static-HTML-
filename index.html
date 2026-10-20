@@ -1443,6 +1443,7 @@ body.has-wallpaper::before{ opacity:0.5; }
      <option value="svg">SVG</option>
      <option value="static">Static</option>
    </select>
+   <select id="proxyWispQuick" title="Wisp server" style="height:34px;max-width:160px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-family:inherit;font-size:0.72em;font-weight:600;padding:0 6px;cursor:pointer;"></select>
    <button class="modal-btn" id="proxyFullscreenBtn">Fullscreen</button>
    <button class="modal-btn" id="proxyCloseBtn">Close</button>
   </div>
@@ -1570,7 +1571,17 @@ body.has-wallpaper::before{ opacity:0.5; }
  <option value="static">Static bridge</option>
  </select>
  <p class="locked-note">
- Scramjet = built-in proxy (BareMux + Zaka Wisp servers). Ultraviolet = real UV only when this page is hosted with /uv/ files; otherwise it uses the Zaka SVG bridge so it still works (never file:///uv/...). SVG / Static = external Zaka bridge. One address bar either way.
+ Scramjet = built-in proxy (BareMux + Wisp servers). Ultraviolet = real UV only when this page is hosted with /uv/ files; otherwise it uses the Zaka SVG bridge so it still works (never file:///uv/...). SVG / Static = external Zaka bridge. One address bar either way.
+ </p>
+ </div>
+
+ <!-- WISP SERVER -->
+ <div class="settings-group">
+ <label>Wisp Server</label>
+ <select id="setWispServer"></select>
+ <input type="text" id="setWispCustom" placeholder="wss://your-wisp.example/ or pick Custom above" style="margin-top:8px;">
+ <p class="locked-note">
+ Transport endpoint for Scramjet / UV (BareMux + epoxy/libcurl). Zaka CloudFront is default. Switch if one is blocked or slow. Custom needs a full <code>wss://…/</code> URL.
  </p>
  </div>
 
@@ -3307,23 +3318,161 @@ try {
   console.warn('[Axiom] Scramjet initialization failed:', e);
 }
 
+/* Public Wisp servers (Zaka family + community). Trailing slash required. */
+const AXIOM_WISP_SERVERS = [
+  { id: 'zaka-cf', name: 'Zaka (CloudFront)', url: 'wss://d1vajlb5xnngpm.cloudfront.net/api/', group: 'Zaka' },
+  { id: 'mercury', name: 'Mercury Workshop', url: 'wss://wisp.mercurywork.shop/', group: 'Community' },
+  { id: 'space', name: 'Go Into Space', url: 'wss://gointospace.app/wisp/', group: 'Community' },
+  { id: 'anura', name: 'Anura', url: 'wss://anura.pro/', group: 'Community' },
+  { id: 'tomp', name: 'TOMP Bare (YouTube-friendly)', url: 'wss://bare-server.fly.dev/wisp/', group: 'Community' },
+  { id: 'pgis-main', name: 'PGIS Main', url: 'wss://pgis-wisp.joytree.site/', group: 'PGIS' },
+  { id: 'pgis-1', name: 'PGIS Frankfurt (EU)', url: 'wss://pgis-wisp.onrender.com/', group: 'PGIS' },
+  { id: 'pgis-2', name: 'PGIS Ohio (US East)', url: 'wss://pgis-wisp-2.onrender.com/', group: 'PGIS' },
+  { id: 'pgis-3', name: 'PGIS Singapore', url: 'wss://pgis-wisp-3.onrender.com/', group: 'PGIS' },
+  { id: 'pgis-4', name: 'PGIS Oregon (US West)', url: 'wss://pgis-wisp-4.onrender.com/', group: 'PGIS' },
+  { id: 'pgis-bonto', name: 'PGIS Bonto', url: 'wss://pgis-wisp.bonto.run/', group: 'PGIS' },
+  { id: 'pgis-voroa', name: 'PGIS Voroa', url: 'wss://pgis-wisp.getvoroa.com/', group: 'PGIS' },
+  { id: 'petezah', name: 'PeteZah Games', url: 'wss://petezahgames.com/wisp/', group: 'PeteZah' },
+  { id: 'petezah-2', name: 'PeteZah (ritebooks)', url: 'wss://3658729.ritebooks.com/wisp/', group: 'PeteZah' },
+  { id: 'petezah-3', name: 'PeteZah (videnom)', url: 'wss://info.videnom.com/wisp/', group: 'PeteZah' },
+  { id: 'petezah-4', name: 'PeteZah (sciencepark)', url: 'wss://sciencepark.cc/wisp/', group: 'PeteZah' },
+  { id: 'petezah-5', name: 'PeteZah (homeworkhelp)', url: 'wss://homeworkhelp.cc/wisp/', group: 'PeteZah' },
+  { id: 'petezah-6', name: 'PeteZah (businessschool)', url: 'wss://businessschool.cc/wisp/', group: 'PeteZah' },
+  { id: 'local', name: 'Same-origin /wisp/', url: (typeof location !== 'undefined' ? ((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/wisp/') : 'wss://localhost/wisp/'), group: 'Local' },
+  { id: 'custom', name: 'Custom (enter below)', url: '', group: 'Custom' }
+];
+
+let axiomBareMux = null;
+let axiomWisp = '';
+
+function normalizeWispUrl(u) {
+  u = String(u || '').trim();
+  if (!u) return '';
+  if (!/^wss?:\/\//i.test(u)) u = 'wss://' + u.replace(/^\/+/, '');
+  if (!u.endsWith('/')) u += '/';
+  return u;
+}
+
+function getSavedWisp() {
+  try {
+    const raw = localStorage.getItem('axiomWisp') || localStorage.getItem('proxServer') || '';
+    if (raw && /^wss?:\/\//i.test(raw)) return normalizeWispUrl(raw);
+  } catch (_) {}
+  return AXIOM_WISP_SERVERS[0].url;
+}
+
+async function applyWispServer(url, opts) {
+  opts = opts || {};
+  const wisp = normalizeWispUrl(url) || AXIOM_WISP_SERVERS[0].url;
+  axiomWisp = wisp;
+  try {
+    localStorage.setItem('axiomWisp', wisp);
+    localStorage.setItem('proxServer', wisp);
+  } catch (_) {}
+  try { window.__axiomWisp = wisp; } catch (_) {}
+  try {
+    if (!axiomBareMux && typeof BareMux !== 'undefined' && BareMux.BareMuxConnection) {
+      axiomBareMux = new BareMux.BareMuxConnection('/baremux/worker.js');
+    }
+    if (axiomBareMux && typeof axiomBareMux.setTransport === 'function') {
+      // Prefer epoxy; fall back to libcurl if present
+      try {
+        await axiomBareMux.setTransport('/epoxy/index.mjs', [{ wisp: wisp }]);
+      } catch (e1) {
+        try {
+          await axiomBareMux.setTransport('/libcurl/index.mjs', [{ wisp: wisp }]);
+        } catch (e2) {
+          await axiomBareMux.setTransport('/epoxy/index.mjs', [{ wisp: wisp }]);
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('[Axiom] applyWispServer failed', e);
+  }
+  if (opts.toast !== false && typeof showToast === 'function') {
+    const found = AXIOM_WISP_SERVERS.find(function (s) { return s.url && normalizeWispUrl(s.url) === wisp; });
+    showToast('Wisp: ' + (found ? found.name : wisp.replace(/^wss?:\/\//i, '').slice(0, 40)));
+  }
+  // Keep UI selects in sync
+  try {
+    const sel = document.getElementById('setWispServer');
+    const quick = document.getElementById('proxyWispQuick');
+    const custom = document.getElementById('setWispCustom');
+    let matched = false;
+    [sel, quick].forEach(function (el) {
+      if (!el) return;
+      for (let i = 0; i < el.options.length; i++) {
+        if (normalizeWispUrl(el.options[i].value) === wisp) {
+          el.value = el.options[i].value;
+          matched = true;
+          break;
+        }
+      }
+      if (!matched) {
+        // select Custom
+        for (let i = 0; i < el.options.length; i++) {
+          if (el.options[i].value === '' || el.options[i].dataset.id === 'custom') {
+            el.value = el.options[i].value;
+            break;
+          }
+        }
+      }
+    });
+    if (custom && !matched) custom.value = wisp;
+  } catch (_) {}
+  return wisp;
+}
+
+function populateWispSelects() {
+  function fill(el) {
+    if (!el) return;
+    el.innerHTML = '';
+    let lastGroup = '';
+    AXIOM_WISP_SERVERS.forEach(function (s) {
+      if (s.group && s.group !== lastGroup) {
+        const og = document.createElement('optgroup');
+        og.label = s.group;
+        el.appendChild(og);
+        lastGroup = s.group;
+      }
+      const opt = document.createElement('option');
+      opt.value = s.url || '';
+      opt.textContent = s.name;
+      opt.dataset.id = s.id;
+      const parent = el.querySelector('optgroup:last-of-type') || el;
+      parent.appendChild(opt);
+    });
+  }
+  fill(document.getElementById('setWispServer'));
+  fill(document.getElementById('proxyWispQuick'));
+  const current = getSavedWisp();
+  [document.getElementById('setWispServer'), document.getElementById('proxyWispQuick')].forEach(function (el) {
+    if (!el) return;
+    let ok = false;
+    for (let i = 0; i < el.options.length; i++) {
+      if (normalizeWispUrl(el.options[i].value) === current) {
+        el.value = el.options[i].value;
+        ok = true;
+        break;
+      }
+    }
+    if (!ok) el.value = '';
+  });
+  const custom = document.getElementById('setWispCustom');
+  if (custom) custom.value = current;
+}
+
 try {
   if (typeof BareMux !== 'undefined' && BareMux.BareMuxConnection) {
-    const axiomBareMux = new BareMux.BareMuxConnection('/baremux/worker.js');
-    // Zaka / community Wisp servers (same family as the SVG bridge). Keep local override.
-    const ZAKA_WISPS = [
-      'wss://d1vajlb5xnngpm.cloudfront.net/api/',
-      'wss://wisp.mercurywork.shop/',
-      'wss://gointospace.app/wisp/'
-    ];
-    let axiomWisp = localStorage.getItem('proxServer') || localStorage.getItem('axiomWisp') || ZAKA_WISPS[0];
-    if (!/^wss?:\/\//i.test(axiomWisp)) axiomWisp = ZAKA_WISPS[0];
-    axiomBareMux.setTransport('/epoxy/index.mjs', [{ wisp: axiomWisp }]);
-    try { window.__axiomWisp = axiomWisp; } catch (_) {}
+    axiomBareMux = new BareMux.BareMuxConnection('/baremux/worker.js');
+    applyWispServer(getSavedWisp(), { toast: false });
   }
 } catch (e) {
   console.warn('[Axiom] BareMux initialization failed:', e);
 }
+window.applyWispServer = applyWispServer;
+window.AXIOM_WISP_SERVERS = AXIOM_WISP_SERVERS;
+
 
 if (navigator.serviceWorker) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
@@ -4758,6 +4907,11 @@ function openSettings() {
  document.getElementById('setPanicUrl').value = settings.panicUrl || 'https://www.google.com';
  const proxyBackendSel = document.getElementById('setProxyBackend');
  if (proxyBackendSel) proxyBackendSel.value = settings.proxyBackend || 'scramjet';
+ if (typeof populateWispSelects === 'function') populateWispSelects();
+ const wispSel = document.getElementById('setWispServer');
+ const wispCustom = document.getElementById('setWispCustom');
+ if (wispCustom) wispCustom.value = (typeof getSavedWisp === 'function' ? getSavedWisp() : '') || '';
+
  applySettings();
  panel.classList.add('open');
  overlay.classList.add('show');
@@ -5009,6 +5163,42 @@ if (proxyBackendEl) proxyBackendEl.onchange = e => {
   saveSettings();
   if (typeof showToast === 'function') showToast('Proxy: ' + (settings.proxyBackend === 'svg' ? 'SVG' : settings.proxyBackend === 'static' ? 'Static' : settings.proxyBackend === 'ultraviolet' ? 'Ultraviolet' : 'Scramjet'));
 };
+
+(function wireWispSelectors() {
+  function onWispPick(url, fromCustom) {
+    if ((!url || !String(url).trim()) && !fromCustom) {
+      const c = document.getElementById('setWispCustom');
+      if (c) { c.focus(); if (typeof showToast === 'function') showToast('Enter a custom wss:// Wisp URL'); }
+      return;
+    }
+    const target = fromCustom ? url : (url || (document.getElementById('setWispCustom') || {}).value);
+    if (typeof applyWispServer === 'function') applyWispServer(target);
+  }
+  const setSel = document.getElementById('setWispServer');
+  if (setSel) setSel.onchange = function () {
+    onWispPick(setSel.value, false);
+  };
+  const custom = document.getElementById('setWispCustom');
+  if (custom) {
+    custom.addEventListener('change', function () { onWispPick(custom.value, true); });
+    custom.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); onWispPick(custom.value, true); }
+    });
+  }
+  const quick = document.getElementById('proxyWispQuick');
+  if (quick) quick.onchange = function () {
+    if (!quick.value) {
+      if (typeof showToast === 'function') showToast('Pick a Wisp or set Custom in Settings');
+      return;
+    }
+    onWispPick(quick.value, false);
+  };
+  if (typeof populateWispSelects === 'function') {
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', populateWispSelects, { once: true });
+    else populateWispSelects();
+  }
+})();
+
 const confirmCloseEl = document.getElementById('setConfirmClose');
 if (confirmCloseEl) confirmCloseEl.onchange = e => { settings.confirmOnClose = e.target.checked; saveSettings(); };
 const confirmTabCloseEl = document.getElementById('setConfirmTabClose');
