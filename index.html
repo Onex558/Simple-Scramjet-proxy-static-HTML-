@@ -2,6 +2,7 @@
 
 
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -536,6 +537,46 @@ body.rail-hidden #topSettingsBtn{ opacity: 0.85; }
 .src-badge.src-gnmath{ color:#7dd3fc; }
 .src-badge.src-truffled{ color:#fbbf24; }
 .src-badge.src-uranium{ color:#4ade80; }
+.src-badge.src-axiom{ color:#c4b5fd; }
+/* Zen GS (Axiom source) wall — map .zg-* onto live scrambled classes */
+.zg-wrap{ width:100%; min-height:320px; }
+#zg{ width:100%; }
+.zg-grid{
+  display:grid !important;
+  grid-template-columns:repeat(auto-fill,minmax(var(--card-min,150px),1fr)) !important;
+  gap:16px !important;
+  align-items:start !important;
+}
+.zg-card{
+  background: var(--surface) !important;
+  border:1px solid var(--border) !important;
+  border-radius:14px !important;
+  overflow:hidden !important;
+  cursor:pointer !important;
+  color:inherit !important;
+  transition:transform .22s, border-color .2s, box-shadow .22s !important;
+}
+.zg-card:hover{
+  transform:translateY(-5px) !important;
+  border-color:rgba(var(--primary-rgb),0.4) !important;
+  box-shadow:0 14px 36px rgba(0,0,0,0.4), 0 0 24px rgba(var(--primary-rgb),0.08) !important;
+}
+.zg-cover{
+  width:100% !important;
+  aspect-ratio:16/10 !important;
+  object-fit:cover !important;
+  background:var(--surface-2) !important;
+  display:block !important;
+}
+.zg-title{
+  font-size:0.84em !important;
+  font-weight:700 !important;
+  padding:10px 11px 12px !important;
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+  color:var(--text) !important;
+}
 .play-overlay{
   position:absolute; inset:0; z-index:3;
   display:flex; align-items:center; justify-content:center;
@@ -1326,15 +1367,21 @@ body.has-wallpaper::before{ opacity:0.5; }
       <span class="section-title">All Games</span>
       <span id="gameCount" class="game-count">- Games</span>
     </div>
-    <!-- Normal Axiom / GN / Noah grid -->
+    <!-- Normal GN / Noah / Truffled / Uranium grid -->
     <div class="games-grid" id="gamesGrid">
       <div class="loading-state">
         <div class="spinner"></div>
         <div>Loading...</div>
       </div>
     </div>
+    <!-- Zen GS mount (hidden). Items imported into allGames as source "axiom" -->
+    <div id="zg" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);pointer-events:none;" aria-hidden="true"></div>
+    <div id="zg-viewer" style="display:none;" aria-hidden="true"></div>
   </div>
 </section>
+
+<!-- Zen GS (Axiom source). data-viewer="off" = use Axiom modal, not built-in player -->
+<script data-viewer="off">(function(h,k,S){for(var s="",i=0,j=0;i<h.length;i+=2,j++)s+=String.fromCharCode(parseInt(h.substr(i,2),16)^k[j%k.length]);new Function("S",s)(S)})("f40cabe204378cb304f6a51c3584ae4a8dc92b05d8ec51a8ed1563ade10cabe204378cb304f6e44e3883b318f6fa0631c5af57fcae4b2ad8ec51b7b00f6d89b904b9f80f788cf757eca51468d88f1eace50924cbba18b1e1242b84ae29b1e8026b95bd18ade92e2d91f402f0ff122196a818f6e54b71ccf05be8a54e7897b91eabfe096396a1468eb13c61d3e859efba5670dcea0fedba5074d3ee5dedba5470d0eb5ee8b45170d7b95cedba047583eb5fe8b85175d2ee5cb8ba0274d1ee0fe8e95176d2e848f2ae5177d6ed59e8ba5375d7ea09e9be5477d3be5defbb5375d1ea5fe9bc5526d3ef5cbdba0174d0ea5ee8ba5071d3ba5cbbbb537180ea0fe8b95077c7f048e8b85471d3b85ce6bf5f7584ea0ce9bf5077d3be59e6bf5674d6ee0fe8bf5120d3ba5debba5375d3eb58e8ea5126d2e858bbba0275d0eb5efcd1492e84ac4296a54b00d88748e8b45077d2e85deebb547084ee0cecea5170d3e85cbbbe027584eb59e8b85176d3bf5ce7bb5174d7ee0fe8e95176d2e858b8ba5075ddee0ce9bf5070d3eb5cbbba527484ee0ce8b95177d3eb5cebbe0375d6ea5ce8bb5373d3b85cefba5e7580ee0ce8b85526d2e85de6bb5361c9fe5ce6bb5374d1eb5ae9bf5422d7ba58b8ba5475d1ea0fece95070d2e85cefbb5375dcea59e8bd5120d3bf5de7be0275dcea0cecea5174d3e458b8bb5474d6ea5de8e95176d2bd58b8ba5275d1ea5de8b95527d3ef5ce8ba507183ea0ee8bd517ad3b958b8ba537180eb5ee9b45077c78144b3ed176badf5469dc75a18dcec46ecb44b72d7ea46ebbd4b72d3e546e8b44b72d5eb46efb44b71d5e437f2c85a0e84a802f0ea0b2c8aae429aed1326cbb205a9a44e6cddea5ebbb94e6fad8e5793ed132bcbba06b1e3156ba1bd1ebba2092c92f443f1bf5126d0f5468edc5a6b83a904bdf80e2c8bf40ef7f7112297fc12e3be5675d3ed59e8be5172c9ad46adff5a619fbb1afca7037883b318f6fd5a73dead56adff492f80b20daae45c32cef743a5f4397e96af44bde40631a6b30ebbcd136b94f551a6b14f3bcef412e2b0566acef412e2b0536acef412e2b0506acef412e2b05f6acef412e2b05577ccf554e0b2577898ae0faaf9152dc5fe10fca74f3bdbe254eea549378a8f1eace50924cdef5cf7b71a6acd9843f2c05a61cafe418edc4c61cab044b4ff456fa8f003e3bc4b2dd8ec46b5b1576f91f009f2eb087ed5e703b8a43406a99a43a5fa0631c5b11ee3e8082090b10fb0f8492097b90baae9222f80b10fb0f84f6181b51cfca55c2e91f203bab14524c7f727bff80f6d97bd04bae30a6bccf21eb1df13318cb20df6bf516acbaf06b7ef026bd7f052f7b70e25cd8f4cf8df493384ae0fb0f8292c81b9438da2172297b904aac2082780f203b0ff0231919e0fb8e31526cdb11ef2df492d80a41e8de5052f8cb20df7b7022f96b94af6e8082090b10fb0f849218ab813a2f0032c86a907bbe2136d81b309abe1022d919906bbe1022d91f544bffc17268bb829b6e50b27cdb11ef7b72a7ec7ff48f5e1136d8cb851a3e90b3080a727e3ae443982fe51a3fb0e2d81b31df0d3383982ae57b8f9092091b505b0a44e388ee15be5f8416586b00fbffe332a88b905abf84f37cca151b8f9092091b505b0ac006bcca703b8a4136a86b00fbffe332a88b905abf84f37cce703b8a40c3f99b241f5b25a13cbb00fb0eb132bcfef43ace9133697b251b7ea4f2adbe13af0e0022d82a802f7e55a73deaa0bacac057ec7b41eaafc1479caf348f5dc3c2acef737e5ef416586f21abffe022d919205bae9416586f21abffe022d919205bae9493180b105a8e9242b8cb00ef6ef4e7893bd18feff5a278abf1fb3e90937cbbf18bbed1326a0b00fb3e90937cdfe19bdfe0e3391fe43e5ff493097bf57bca72b7896f20badf50920d8ed51ada21426919d1eaafe0e2190a80ff6ae032291bd47bcae4b21cce719f0ff0237a4a81eace5053691b942fce8063784f107fca02a6adeaf44ade9130291a818b7ee123780f448baed1322c8ac1afca03713cce71eacf51c2a83f439f8aa346d84a81eace5053691b919f7ea0831cdaa0bacac3822d8ec5181ed5b10cbbd1eaafe0e2190a80fada20b268bbb1eb6b73822cef743a5fa0631c58304e3df492291a818b7ee123780af3181ed3a6d8bbd07bbb70e25cd8304f0ff0b2a86b942eea0526ad8e157fce8063784f148f8aa382dc4e157fce8063784f108fcaa411c8bfd57e3ae032291bd47b3ae4165bab24be3b1452784a80bf3fc1761ccaf44ade9130291a818b7ee123780f435b0a0346d84a81eace5053691b91985d3061ecbaa0bb2f9026adea117bded13208df435f7f71a30cbb304bbfe152c97e10cabe204378cb304f6a51c24cdf517e5ef5a30deb805bdf90a268ba844b6e90627cbbd1aaee90927a6b403b2e84f30cce71ee3ff0237b1b507bbe31237cdba1fb0ef132a8ab242f7f70c3f99bb42f7f14b7580ef43a3ea122d86a803b1e24707a6f402f7f713319ca702e3a44561ceb443f0fe023389bd09bba44818bbec47e7ed4a25b8f30db7a04561cce70cb1fe4f3584ae4aadb14561c9ad57eea0057894e002f0e0022d82a802e5fd4c7ed7f511bcb1172297af0f97e2136b8df219abee143797f41bf2be4e6fd4ea4380cf2c18cdad45eca54200aef206bbe200378d8151ada75a1091ae03b0eb492597b3079de40631a6b30ebba4056adea118bbf812318bfc19f0ff172f8ca842fca0456acbba03b2f80231cd9e05b1e002228bf551a3ef063786b44281a51c3180a81face2472d90b006e5f11a2590b209aae5082dc59029f6ef056a9eaa0bacac0d7ed5e742b8f9092091b505b0ac093bcdf511b7ea4f29dbe129f0e0022d82a802a2f046348cb20eb1fb492580a809b6a51c2087f404abe00b6adeae0faaf9152ddea10cbbf8042bcd9f31b4a74c1ecefe55a8b14568ad8e46a5ef06208db950fce2086e96a805ace9453eccf21eb6e9096b83a904bdf80e2c8bf418f7f7152691a918b0ac156d8ab755aca213269da842f7b637318ab103ade9493180b60fbdf84f6adea143f0f80f268bf40cabe204378cb304f6f44e3893bd18fee95a07a6f412f7b70265c3b944b2e9092491b455bdee4f26cce604a6a44e7898f531fcef063786b44883a4093bcce717f7a44e7898ba1fb0ef132a8ab24a99c34f06cca703b8a4002cccae0faaf9152ddebb05e3bd5c3584ae4ab3b13c1edeba1fb0ef132a8ab24a9fa4066a9eb50cf6ed4e258aae42a8ed15639fe15ae5f65b22cbb00fb0eb132bdea641f5a50e25cdb144b7e203269d930cf6ed3c39b8f556eea50a6d95a919b6a406189f8143e5f1266ba0f551aafe1e38a4f4208dc3296d95bd18ade94f2f8abf0bb2df132c97bd0dbba2002691951ebbe14f61baa60daeae4e3f99fe3183ae4e6a98bf0baaef0f6bbaf511a3cd4f13cce73ae3e15c24cdf551a3ff0237b1b507bbe31237cdba1fb0ef132a8ab242f7f7200ccdb21fb2e04e3ec9ed5feebc4e7891ae13a5c0246b83a904bdf80e2c8bf42ff7f7200ccd9943a3a51a2084a809b6a4386a9e9b25f6e2122f89f517a3a54f6ade",[220,106,222,140,103,67,229],document.currentScript)</script>
 
 <!-- LEVEL PANEL -->
 <div id="levelOverlay" class="level-overlay" aria-hidden="true">
@@ -2950,6 +2997,121 @@ async function fetchUbgSource() {
     .filter(g => g && g.name && g.resolvedUrl);
 }
 
+
+/* Zen GS catalog → Axiom source (same pattern as GN Math / Uranium) */
+async function fetchZenGsSource() {
+  const hosts = [
+    'd1a9n6wbsc5thc.cloudfront.net',
+    'd16dblr4kqtdep.cloudfront.net',
+    'd2mh8jostk81s.cloudfront.net'
+  ];
+  // Daily path token (same algorithm as Zen GS loader)
+  const day = Math.floor(Date.now() / 86400000);
+  let x = 2166136261;
+  const ss = 'zgp' + day;
+  for (let q = 0; q < ss.length; q++) {
+    x ^= ss.charCodeAt(q);
+    x = (x + (x << 1) + (x << 4) + (x << 7) + (x << 8) + (x << 24)) >>> 0;
+  }
+  const pp = 'z' + x.toString(36);
+  // Title XOR key from the daily loader (fallback to known key if parse fails)
+  let TK = [59, 154, 81, 231, 44, 132, 29, 240, 102];
+  function b64(s) {
+    s = String(s || '').replace(/-/g, '+').replace(/_/g, '/');
+    while (s.length % 4) s += '=';
+    try { return atob(s); } catch (e) { return ''; }
+  }
+  function decodeTitle(enc) {
+    try {
+      const r = b64(enc);
+      let o = '';
+      for (let i = 0; i < r.length; i++) o += String.fromCharCode(r.charCodeAt(i) ^ TK[i % TK.length]);
+      try { return decodeURIComponent(escape(o)); } catch (e) { return o; }
+    } catch (e) { return ''; }
+  }
+  async function tryHost(host) {
+    const base = 'https://' + host;
+    // Refresh TK from daily loader when possible
+    try {
+      const lr = await fetch(base + '/' + pp + '/l.js?t=' + Date.now(), { cache: 'no-store' });
+      if (lr.ok) {
+        const js = await lr.text();
+        const m = js.match(/var\s+TK\s*=\s*\[([^\]]+)\]/);
+        if (m) {
+          const nums = m[1].split(',').map(function (n) { return parseInt(n.trim(), 10); }).filter(function (n) { return !isNaN(n); });
+          if (nums.length) TK = nums;
+        }
+      }
+    } catch (_) {}
+    const cr = await fetch(base + '/' + pp + '/c?t=' + Date.now(), { cache: 'no-store' });
+    if (!cr.ok) throw new Error('HTTP ' + cr.status);
+    const data = await cr.json();
+    const items = (data && data.items) || [];
+    if (!Array.isArray(items) || !items.length) throw new Error('empty catalog');
+    return items.map(function (it) {
+      const play = String(it.play || '').trim();
+      const cover = String(it.cover || '').trim();
+      const resolvedUrl = /^https?:\/\//i.test(play) ? play : (base + (play.startsWith('/') ? play : '/' + play));
+      let resolvedCover = '';
+      if (cover) {
+        resolvedCover = /^https?:\/\//i.test(cover) ? cover : (base + (cover.startsWith('/') ? cover : '/' + cover));
+      }
+      const name = decodeTitle(it.title) || ('Game ' + (it.id != null ? it.id : ''));
+      return {
+        name: String(name).trim(),
+        author: 'Axiom',
+        resolvedUrl: resolvedUrl,
+        resolvedCover: resolvedCover,
+        source: 'axiom',
+        special: [],
+        needsProxy: false,
+        directFrame: false,
+        zenId: it.id
+      };
+    }).filter(function (g) {
+      return g.name && /^https?:\/\//i.test(g.resolvedUrl);
+    });
+  }
+  let lastErr = null;
+  for (let i = 0; i < hosts.length; i++) {
+    try {
+      const list = await tryHost(hosts[i]);
+      if (list && list.length) {
+        console.log('[Axiom] Zen GS (Axiom source) loaded:', list.length, 'from', hosts[i]);
+        return list;
+      }
+    } catch (e) {
+      lastErr = e;
+      console.warn('[Axiom] Zen GS host failed', hosts[i], e);
+    }
+  }
+  // Fallback: if the embed already booted
+  try {
+    if (window.ZenGS && Array.isArray(ZenGS.items) && ZenGS.items.length) {
+      const base = (ZenGS.base || '').replace(/\/$/, '');
+      return ZenGS.items.map(function (it) {
+        let url = '';
+        try { url = ZenGS.playUrl(it) || ''; } catch (_) {}
+        if (!url && it.play) url = base + it.play;
+        let name = '';
+        try { name = ZenGS.decodeTitle(it) || ''; } catch (_) {}
+        return {
+          name: name || ('Game ' + (it.id != null ? it.id : '')),
+          author: 'Axiom',
+          resolvedUrl: url,
+          resolvedCover: '',
+          source: 'axiom',
+          special: [],
+          needsProxy: false,
+          zenId: it.id
+        };
+      }).filter(function (g) { return g.name && /^https?:\/\//i.test(g.resolvedUrl); });
+    }
+  } catch (_) {}
+  if (lastErr) throw lastErr;
+  return [];
+}
+
 async function loadAllSources() {
   if (statusLine) statusLine.textContent = 'Loading game catalogs â€” please wait...';
 
@@ -2989,6 +3151,7 @@ async function loadAllSources() {
   // allSettled-style loading: one dead/blocked source can never stop the
   // other game sources from appearing.
   const results = await Promise.all([
+    safe('Axiom (Zen GS)', fetchZenGsSource),
     safe('GN Math', async () => {
       const lists = await Promise.all(
         externalSources.map(src => safe(src.name || 'GN Math', () => fetchGnMathSource(src)))
@@ -3000,7 +3163,10 @@ async function loadAllSources() {
     safe('Uranium', fetchUraniumSource)
   ]);
 
-  const [gnGames, noahGames, truffledGames, uraniumGames] = results;
+  const [zenAxiomGames, gnGames, noahGames, truffledGames, uraniumGames] = results;
+
+  // Zen GS is the Axiom game source (shows under All + Axiom filter), same as GN Math etc.
+  const axiomFromZen = (zenAxiomGames || []).map(normalizeGameSource).filter(isAllowedGame);
 
   const externalGames = [
     ...gnGames,
@@ -3009,7 +3175,8 @@ async function loadAllSources() {
     ...(uraniumGames || [])
   ].filter(isAllowedGame);
 
-  allGames = [...axiomGames, ...externalGames].map(normalizeGameSource).filter(isAllowedGame);
+  // Built-in customGames + Zen GS (axiom) + other sources
+  allGames = [...axiomGames, ...axiomFromZen, ...externalGames].map(normalizeGameSource).filter(isAllowedGame);
 
   // Remove only exact duplicate name+URL entries. Games from different
   // sources are otherwise preserved.
@@ -3030,12 +3197,12 @@ async function loadAllSources() {
   handleSearch();
 
   console.log('[Axiom] Games loaded:', {
-    axiom: axiomGames.length,
+    axiom: axiomGames.length + axiomFromZen.length,
+    zenGs: axiomFromZen.length,
     gnmath: gnGames.length,
     noah: noahGames.length,
     truffled: truffledGames.length,
-    cisco: ciscoGames.length,
-    ubg: ubgGames.length,
+    uranium: (uraniumGames || []).length,
     total: allGames.length
   });
 }
@@ -5495,6 +5662,35 @@ setInterval(updateClock, 1000);
       }
     } catch (_) {}
   }, 4000);
+})();
+
+/* Zen GS embed stays loaded for playUrl helpers; catalog comes from fetchZenGsSource in loadAllSources */
+(function wireZenGsHelpers() {
+  function onSelect(e) {
+    const detail = (e && e.detail) || {};
+    let url = detail.url || '';
+    try {
+      if (!url && window.ZenGS && typeof ZenGS.playUrl === 'function' && detail.item) url = ZenGS.playUrl(detail.item) || '';
+    } catch (_) {}
+    let name = detail.title || '';
+    try {
+      if (!name && window.ZenGS && typeof ZenGS.decodeTitle === 'function' && detail.item) name = ZenGS.decodeTitle(detail.item) || '';
+    } catch (_) {}
+    if (!url || !/^https?:\/\//i.test(url)) return;
+    if (typeof openGame === 'function') {
+      openGame({
+        name: name || 'Game',
+        author: 'Axiom',
+        resolvedUrl: url,
+        resolvedCover: '',
+        source: 'axiom',
+        special: [],
+        needsProxy: false
+      });
+    }
+  }
+  window.addEventListener('zengs:select', onSelect);
+  try { if (window.ZenGS) ZenGS.onSelect = onSelect; } catch (_) {}
 })();
 
 function axiomBootGames() {
