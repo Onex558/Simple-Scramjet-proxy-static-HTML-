@@ -3514,7 +3514,7 @@ function attachScramjetFrame(iframe) {
 
 /* ===== ALTERNATE PROXIES (SVG + Static) ===== */
 const ALT_PROXY_WS = 'wss://d1vajlb5xnngpm.cloudfront.net/api/';
-const ALT_PROXY_SVG_BRIDGE = 'https://cdn.jsdelivr.net/gh/lightspedfr/zakastatic@main/logo-b2b3e4d75f89f6104a35c1c7a5972ddd1be2cf72.svg';
+const ALT_PROXY_SVG_BRIDGE = 'https://catclassgoat.s3.us-east-1.amazonaws.com/circle.svg';
 let _staticProxyBlobUrl = null;
 
 function altProxyEncode(str) {
@@ -3547,7 +3547,7 @@ function buildStaticProxyShellHtml(targetUrl) {
   parts.push('<iframe id="frame" src="' + initialSrc + '"></iframe>');
   parts.push('<scr' + 'ipt>');
   parts.push('var WS="wss://d1vajlb5xnngpm.cloudfront.net/api/";');
-  parts.push('var BRIDGE="https://cdn.jsdelivr.net/gh/lightspedfr/zakastatic@main/logo-b2b3e4d75f89f6104a35c1c7a5972ddd1be2cf72.svg";');
+  parts.push('var BRIDGE="https://catclassgoat.s3.us-east-1.amazonaws.com/circle.svg";');
   parts.push('function encode(str){return btoa(str).replace(/\\+/g,"-").replace(/\\//g,"_").replace(/=+$/,"");}');
   parts.push('function go(){var val=document.getElementById("url").value.trim();if(!val)return;');
   parts.push('if(!val.includes(".")||val.includes(" ")){val="https://duckduckgo.com/?q="+encodeURIComponent(val);}');
