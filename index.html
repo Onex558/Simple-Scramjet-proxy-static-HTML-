@@ -350,28 +350,6 @@ body.rail-hidden #topSettingsBtn{ opacity: 0.85; }
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
-.online-float{
-  position: fixed;
-  top: 18px; left: 18px; right: auto;
-  z-index: 90;
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 8px 14px;
-  border-radius: 12px;
-  background: rgba(12,12,20,0.75);
-  border: 1px solid rgba(61,220,132,0.2);
-  font-size: 0.72em; font-weight: 600; color: #b8f5d0;
-  backdrop-filter: blur(12px);
-  transition: opacity .2s, border-color .2s, color .2s;
-}
-.online-float.hidden{ opacity: 0; pointer-events: none; }
-.online-dot{
-  width: 7px; height: 7px; border-radius: 50%;
-  background: #3ddc84; box-shadow: 0 0 10px #3ddc84;
-  animation: onlinePulse 1.8s ease-in-out infinite;
-}
-@keyframes onlinePulse{0%,100%{opacity:1}50%{opacity:.4}}
-.online-float.offline{ color: var(--muted); border-color: rgba(255,90,90,.25); }
-.online-float.offline .online-dot{ background:#ff5a5a; box-shadow:none; animation:none; }
 
 .home-foot{
   position: fixed; bottom: 22px; left: 0; right: 0;
@@ -1211,13 +1189,6 @@ body.has-wallpaper::before{ opacity:0.5; }
 <div id="achToast" role="status" aria-live="polite"></div>
 
 
-<div class="online-float" id="onlineFloat" title="Users online right now">
-  <span class="online-dot" id="onlineDot"></span>
-  <span id="onlineCount">- online</span>
-</div>
-
-
-
 <div class="clock-float">
   <span id="clockTime">--:--</span>
   
@@ -1439,12 +1410,12 @@ body.has-wallpaper::before{ opacity:0.5; }
   <button type="button" class="proxy-go" id="proxyGoBtn">Go</button>
   <div class="proxy-actions">
    <select id="proxyBackendQuick" title="Proxy backend" style="height:34px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-family:inherit;font-size:0.78em;font-weight:600;padding:0 8px;cursor:pointer;">
+     <option value="svg" selected>SVG</option>
+     <option value="static">Static</option>
      <option value="scramjet">Scramjet</option>
      <option value="ultraviolet">Ultraviolet</option>
-     <option value="svg">SVG</option>
-     <option value="static">Static</option>
    </select>
-   <select id="proxyWispQuick" title="Wisp server" style="height:34px;max-width:160px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-family:inherit;font-size:0.72em;font-weight:600;padding:0 6px;cursor:pointer;"></select>
+   <select id="proxyWispQuick" title="Wisp server (Scramjet/UV only)" style="display:none;height:34px;max-width:160px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-family:inherit;font-size:0.72em;font-weight:600;padding:0 6px;cursor:pointer;"></select>
    <button class="modal-btn" id="proxyFullscreenBtn">Fullscreen</button>
    <button class="modal-btn" id="proxyCloseBtn">Close</button>
   </div>
@@ -1566,27 +1537,27 @@ body.has-wallpaper::before{ opacity:0.5; }
  <div class="settings-group">
  <label>Proxy Backend</label>
  <select id="setProxyBackend">
- <option value="scramjet">Scramjet (default)</option>
- <option value="ultraviolet">Ultraviolet</option>
- <option value="svg">SVG bridge</option>
+ <option value="svg" selected>SVG (recommended — no Wisp)</option>
  <option value="static">Static bridge</option>
+ <option value="scramjet">Scramjet (needs full host)</option>
+ <option value="ultraviolet">Ultraviolet (needs /uv/)</option>
  </select>
  <p class="locked-note">
- Scramjet needs a full host with /scram + /baremux (not Google Apps Script). On Google Script / file:// the site auto-switches to the SVG (Zaka) bridge so Browser still works. Ultraviolet needs /uv/ files. SVG / Static = external bridge.
+ SVG / Static = no Wisp (best for Google Script & school Chromebooks). Scramjet / Ultraviolet = need a Wisp server and a full host with proxy files.
  </p>
  </div>
 
- <!-- WISP SERVER -->
- <div class="settings-group">
- <label>Wisp Server</label>
+ <!-- WISP SERVER — only used for Scramjet / Ultraviolet -->
+ <div class="settings-group" id="wispSettingsGroup" style="display:none" aria-hidden="true">
+ <label>Wisp Server (Scramjet / UV only)</label>
  <select id="setWispServer"></select>
- <input type="text" id="setWispCustom" placeholder="wss://your-wisp.example/ or pick Custom above" style="margin-top:8px;">
+ <input type="text" id="setWispCustom" placeholder="wss://your-wisp.example/" style="margin-top:8px;">
  <p class="locked-note">
- Transport endpoint for Scramjet / UV (BareMux + epoxy/libcurl). Zaka CloudFront is default. Switch if one is blocked or slow. Custom needs a full <code>wss://…/</code> URL.
+ Only used when Proxy Backend is Scramjet or Ultraviolet. SVG mode does not use Wisp.
  </p>
  </div>
 
- <!-- PANIC KEY FEATURE -->
+<!-- PANIC KEY FEATURE -->
  <div class="settings-group">
  <label>Panic Key Target URL</label>
  <input type="text" id="setPanicUrl" placeholder="https://classroom..com" value="https://www..com">
@@ -1750,7 +1721,7 @@ const DEFAULTS = {
  confirmTabClose: false,
   autoAboutBlank: false,
  railPosition: 'bottom',
- proxyBackend: 'scramjet'
+ proxyBackend: 'svg',
 };
 
 const WALLPAPERS = {
@@ -3646,7 +3617,7 @@ function buildCatclassgoatWrapperHtml(targetUrl) {
     + '});\n'
     + 'x.addEventListener("load",function(){ setTimeout(boot, 400); });\n'
     + 'x.src=B;\n'
-    + '})();</script></body></html>';
+    + '})();</scr' + 'ipt></body></html>';
 }
 
 function loadCatclassgoatProxy(iframe, targetUrl) {
@@ -3798,15 +3769,37 @@ function loadStaticProxyShell(iframe, targetUrl) {
 }
 
 function getProxyBackend() {
+  // Hybrid:
+  //   svg / static  → no Wisp (external SVG bridge)
+  //   scramjet / uv → Wisp + BareMux (full host only)
   try {
-    // Google Script / file / missing proxy assets → SVG bridge only
-    if (typeof isRestrictedProxyHost === 'function' && isRestrictedProxyHost()) {
+    var b = (settings && settings.proxyBackend) || 'svg';
+    if (b !== 'svg' && b !== 'static' && b !== 'scramjet' && b !== 'ultraviolet') b = 'svg';
+    // Google Script / missing proxy files cannot run Scramjet or local UV
+    if ((b === 'scramjet' || b === 'ultraviolet') && typeof isRestrictedProxyHost === 'function' && isRestrictedProxyHost()) {
       return 'svg';
     }
-    var b = (settings && settings.proxyBackend) || 'scramjet';
-    if (b === 'svg' || b === 'static' || b === 'scramjet' || b === 'ultraviolet') return b;
+    return b;
   } catch (_) {}
-  return 'scramjet';
+  return 'svg';
+}
+
+function backendNeedsWisp(backend) {
+  backend = backend || getProxyBackend();
+  return backend === 'scramjet' || backend === 'ultraviolet';
+}
+
+function syncWispUiVisibility() {
+  try {
+    var need = backendNeedsWisp();
+    var quick = document.getElementById('proxyWispQuick');
+    var group = document.getElementById('wispSettingsGroup');
+    if (quick) quick.style.display = need ? '' : 'none';
+    if (group) {
+      group.style.display = need ? '' : 'none';
+      group.setAttribute('aria-hidden', need ? 'false' : 'true');
+    }
+  } catch (_) {}
 }
 
 /* Ultraviolet helpers.
@@ -3861,62 +3854,39 @@ function buildUltravioletProxyUrl(targetUrl) {
 function proxyNavigateFrame(iframe, url) {
   if (!iframe || !url) return false;
   var backend = getProxyBackend();
-  var restricted = (typeof isRestrictedProxyHost === 'function' && isRestrictedProxyHost());
 
-  // GAS / single-file: never try Scramjet or local UV
-  if (restricted) backend = 'svg';
-
-  if (backend === 'svg' || backend === 'static') {
+  // Default path: SVG only (no Wisp server needed)
+  if (backend === 'svg' || backend === 'static' || !backend) {
     return loadCatclassgoatProxy(iframe, url);
   }
 
+  // Optional advanced backends only when explicitly selected AND host can support them
   if (backend === 'ultraviolet') {
     try {
       if (!canUseLocalUltraviolet()) {
-        if (typeof showToast === 'function' && !window.__uvFallbackToast) {
-          window.__uvFallbackToast = true;
-          showToast('UV needs a host with /uv/ — using catclassgoat proxy');
-        }
         return loadCatclassgoatProxy(iframe, url);
       }
       iframe.removeAttribute('srcdoc');
-      var uvSrc = buildUltravioletProxyUrl(url);
-      iframe.src = uvSrc;
+      iframe.src = buildUltravioletProxyUrl(url);
       return true;
     } catch (e) {
-      console.warn('[Axiom] Ultraviolet navigation failed:', e);
-      try {
-        var frameUv = attachScramjetFrame(iframe);
-        if (frameUv && typeof frameUv.go === 'function') {
-          frameUv.go(url);
-          console.warn('[Axiom] UV unavailable — fell back to Scramjet');
-          return true;
-        }
-      } catch (_) {}
-      try {
-        return loadCatclassgoatProxy(iframe, url);
-      } catch (e2) {
-        console.warn('[Axiom] UV+SVG fallback failed:', e2);
-        return false;
+      console.warn('[Axiom] UV failed — SVG', e);
+      return loadCatclassgoatProxy(iframe, url);
+    }
+  }
+
+  if (backend === 'scramjet') {
+    var frame = attachScramjetFrame(iframe);
+    if (frame && typeof frame.go === 'function') {
+      try { frame.go(url); return true; } catch (e) {
+        console.warn('[Axiom] Scramjet failed — SVG', e);
       }
     }
-  }
-
-  var frame = attachScramjetFrame(iframe);
-  if (frame && typeof frame.go === 'function') {
-    try { frame.go(url); return true; } catch (e) {
-      console.warn('[Axiom] Scramjet navigation failed:', e);
-    }
-  }
-  try {
-    console.warn('[Axiom] Scramjet unavailable — fell back to SVG proxy');
     return loadCatclassgoatProxy(iframe, url);
-  } catch (e2) {
-    console.warn('[Axiom] SVG fallback failed:', e2);
   }
-  return false;
-}
 
+  return loadCatclassgoatProxy(iframe, url);
+}
 
 /* ===== School Chromebook / blocked Wisp recovery =====
    "Internal SW Error: ... error code 7: Could not connect to server"
@@ -4157,17 +4127,17 @@ function openProxy(initialUrl, cleanMode) {
     initialUrl = 'https://duckduckgo.com';
   }
 
-  // Google Script / school networks that blocked Wisp — use SVG backend
+  // Restricted hosts (Google Script) cannot use Scramjet/UV — force SVG there only
   try {
-    const preferSvg = (typeof isRestrictedProxyHost === 'function' && isRestrictedProxyHost())
-      || (localStorage.getItem('axiomProxyPreferSvg') === '1');
-    if (preferSvg) {
+    if (typeof isRestrictedProxyHost === 'function' && isRestrictedProxyHost()) {
       if (typeof settings === 'object') settings.proxyBackend = 'svg';
-      const bq = document.getElementById('proxyBackendQuick');
-      if (bq) bq.value = 'svg';
-      const sel = document.getElementById('setProxyBackend');
-      if (sel) sel.value = 'svg';
     }
+    const be = typeof getProxyBackend === 'function' ? getProxyBackend() : 'svg';
+    const bq = document.getElementById('proxyBackendQuick');
+    if (bq) bq.value = be;
+    const sel = document.getElementById('setProxyBackend');
+    if (sel) sel.value = be;
+    if (typeof syncWispUiVisibility === 'function') syncWispUiVisibility();
   } catch (_) {}
 
   proxyMode = true;
@@ -5263,7 +5233,8 @@ function openSettings() {
  refreshHomeWallpaperUI();
  document.getElementById('setPanicUrl').value = settings.panicUrl || 'https://www.google.com';
  const proxyBackendSel = document.getElementById('setProxyBackend');
- if (proxyBackendSel) proxyBackendSel.value = settings.proxyBackend || 'scramjet';
+ if (proxyBackendSel) proxyBackendSel.value = settings.proxyBackend || 'svg';
+ if (typeof syncWispUiVisibility === 'function') syncWispUiVisibility();
  if (typeof populateWispSelects === 'function') populateWispSelects();
  const wispSel = document.getElementById('setWispServer');
  const wispCustom = document.getElementById('setWispCustom');
@@ -5516,9 +5487,23 @@ if (railPosInput) railPosInput.onchange = e => { settings.railPosition = e.targe
 document.getElementById('setPanicUrl').oninput = e => { settings.panicUrl = e.target.value; saveSettings(); };
 const proxyBackendEl = document.getElementById('setProxyBackend');
 if (proxyBackendEl) proxyBackendEl.onchange = e => {
-  settings.proxyBackend = e.target.value || 'scramjet';
+  settings.proxyBackend = e.target.value || 'svg';
   saveSettings();
-  if (typeof showToast === 'function') showToast('Proxy: ' + (settings.proxyBackend === 'svg' ? 'SVG' : settings.proxyBackend === 'static' ? 'Static' : settings.proxyBackend === 'ultraviolet' ? 'Ultraviolet' : 'Scramjet'));
+  try {
+    if (settings.proxyBackend === 'scramjet' || settings.proxyBackend === 'ultraviolet') {
+      localStorage.setItem('axiomProxyForceAdvanced', '1');
+    } else {
+      localStorage.removeItem('axiomProxyForceAdvanced');
+    }
+  } catch (_) {}
+  if (typeof syncWispUiVisibility === 'function') syncWispUiVisibility();
+  if (typeof showToast === 'function') {
+    var label = settings.proxyBackend === 'svg' ? 'SVG (no Wisp)'
+      : settings.proxyBackend === 'static' ? 'Static (no Wisp)'
+      : settings.proxyBackend === 'ultraviolet' ? 'Ultraviolet + Wisp'
+      : 'Scramjet + Wisp';
+    showToast('Proxy: ' + label);
+  }
 };
 
 (function wireWispSelectors() {
@@ -5680,12 +5665,20 @@ let proxyHistory = [];
   renderBookmarks();
   const backendQuick = document.getElementById('proxyBackendQuick');
   if (backendQuick) {
-    backendQuick.value = (settings && settings.proxyBackend) || 'scramjet';
-    backendQuick.onchange = function () {
-      settings.proxyBackend = backendQuick.value || 'scramjet';
+    backendQuick.value = (typeof getProxyBackend === 'function' ? getProxyBackend() : ((settings && settings.proxyBackend) || 'svg'));
+    backendQuick.onchange = () => {
+      settings.proxyBackend = backendQuick.value || 'svg';
       saveSettings();
+      try {
+        if (settings.proxyBackend === 'scramjet' || settings.proxyBackend === 'ultraviolet') {
+          localStorage.setItem('axiomProxyForceAdvanced', '1');
+        } else {
+          localStorage.removeItem('axiomProxyForceAdvanced');
+        }
+      } catch (_) {}
       const sel = document.getElementById('setProxyBackend');
       if (sel) sel.value = settings.proxyBackend;
+      if (typeof syncWispUiVisibility === 'function') syncWispUiVisibility();
       if (activeSessionUrl) navigateProxy(activeSessionUrl);
     };
   }
@@ -6268,6 +6261,24 @@ setInterval(updateClock, 1000);
   setTimeout(apply, 500);
 })();
 
+
+(function forceSvgProxyDefault() {
+  // First-time default only — do not override user choice of Scramjet/UV
+  try {
+    if (typeof settings === 'object') {
+      var b = settings.proxyBackend;
+      if (!b || (b !== 'svg' && b !== 'static' && b !== 'scramjet' && b !== 'ultraviolet')) {
+        settings.proxyBackend = 'svg';
+        try { if (typeof saveSettings === 'function') saveSettings(); } catch (_) {}
+      }
+    }
+    if (typeof syncWispUiVisibility === 'function') {
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', syncWispUiVisibility, { once: true });
+      else syncWispUiVisibility();
+    }
+  } catch (_) {}
+})();
+
 function axiomBootGames() {
   try { updateStatsUI(); } catch (_) {}
   try { loadAllSources(); } catch (e) { console.error('[Axiom] loadAllSources failed', e); }
@@ -6302,120 +6313,52 @@ window.addEventListener('load', () => {
 (function () {
   'use strict';
 
-  const SUPABASE_URL = 'https://kgehjrpdwlkzsvaiwvaf.supabase.co';
-  const SUPABASE_KEY = 'sb_publishable_q0etU4VaLZD8v7OuSkN1ow_P3GA1L4T';
+  const BUILTIN_SUPABASE_URL = 'https://kgehjrpdwlkzsvaiwvaf.supabase.co';
+  const BUILTIN_SUPABASE_KEY = 'sb_publishable_q0etU4VaLZD8v7OuSkN1ow_P3GA1L4T';
   const CHAT_CHANNEL = 'axiom-chat-global';
   const MSG_CACHE_KEY = 'axiomChatCache';
   const MAX_CACHE = 120;
 
-  if (typeof supabase === 'undefined') {
-    console.error('[Axiom] Supabase library missing');
-    return;
+  function resolveSupabaseCreds() {
+    var url = BUILTIN_SUPABASE_URL;
+    var key = BUILTIN_SUPABASE_KEY;
+    try {
+      if (typeof settings === 'object' && settings) {
+        if (settings.supabaseUrl) url = String(settings.supabaseUrl).trim();
+        if (settings.supabaseKey) key = String(settings.supabaseKey).trim();
+      }
+      var lsUrl = localStorage.getItem('axiomSupabaseUrl');
+      var lsKey = localStorage.getItem('axiomSupabaseKey');
+      if (lsUrl) url = lsUrl;
+      if (lsKey) key = lsKey;
+    } catch (_) {}
+    return { url: url, key: key };
   }
 
-  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-    auth: {
-      persistSession: true,      // keep the session saved so accounts are remembered
-      autoRefreshToken: true,    // silently refresh so the session doesn't expire while open
-      storage: window.localStorage,
-      storageKey: 'axiom-auth'
-    }
-  });
+  if (typeof supabase === 'undefined') {
+    console.error('[Axiom] Supabase library missing');
+    // Still allow GAS online counter below by not returning early for whole IIFE —
+    // but chat needs supabase. Keep return for chat; online counter is independent.
+  }
 
-  window.axiomSb = sb;
-
-  /* ===== LIVE ONLINE USER COUNTER (Supabase Presence) ===== */
-  (function initOnlineCounter() {
-    const floatEl = document.getElementById('onlineFloat');
-    const countEl = document.getElementById('onlineCount');
-    const dotEl = document.getElementById('onlineDot');
-    if (!floatEl || !countEl) return;
-
-    let presenceChannel = null;
-    let myKey = null;
-
-    function setCount(n) {
-      const num = Math.max(0, n | 0);
-      countEl.textContent = num === 1 ? '1 online' : (num + ' online');
-      if (num > 0) {
-        floatEl.classList.remove('offline');
-      } else {
-        floatEl.classList.add('offline');
-      }
-    }
-
-    function updateFromState(state) {
-      if (!state) { setCount(0); return; }
-      // state is { key: [{...}, ...], ... }
-      let total = 0;
-      Object.keys(state).forEach(k => {
-        const arr = state[k];
-        if (Array.isArray(arr)) total += arr.length;
-        else total += 1;
-      });
-      setCount(total);
-    }
-
-    try {
-      myKey = 'u_' + (crypto.randomUUID ? crypto.randomUUID().slice(0, 8) : String(Date.now()) + Math.random().toString(36).slice(2, 6));
-      presenceChannel = sb.channel('axiom-online', {
-        config: { presence: { key: myKey } }
-      });
-
-      presenceChannel
-        .on('presence', { event: 'sync' }, () => {
-          const state = presenceChannel.presenceState();
-          updateFromState(state);
-        })
-        .on('presence', { event: 'join' }, () => {
-          const state = presenceChannel.presenceState();
-          updateFromState(state);
-        })
-        .on('presence', { event: 'leave' }, () => {
-          const state = presenceChannel.presenceState();
-          updateFromState(state);
-        })
-        .subscribe(async (status) => {
-          if (status === 'SUBSCRIBED') {
-            await presenceChannel.track({
-              online_at: new Date().toISOString(),
-              user: (localStorage.getItem('axiomUsername') || 'guest').slice(0, 20)
-            });
-            // Initial count after a short delay so own presence is included
-            setTimeout(() => {
-              try { updateFromState(presenceChannel.presenceState()); } catch (_) {}
-            }, 400);
-          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-            setCount(0);
-            floatEl.classList.add('offline');
-            countEl.textContent = 'offline';
-          }
-        });
-
-      // Clean leave on page hide/unload
-      window.addEventListener('pagehide', () => {
-        try { if (presenceChannel) presenceChannel.untrack(); } catch (_) {}
-      });
-      document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'hidden') {
-          try { if (presenceChannel) presenceChannel.untrack(); } catch (_) {}
-        } else if (document.visibilityState === 'visible' && presenceChannel) {
-          try {
-            presenceChannel.track({
-              online_at: new Date().toISOString(),
-              user: (localStorage.getItem('axiomUsername') || 'guest').slice(0, 20)
-            });
-          } catch (_) {}
+  var _creds = resolveSupabaseCreds();
+  var sb = null;
+  try {
+    if (typeof supabase !== 'undefined') {
+      sb = supabase.createClient(_creds.url, _creds.key, {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          storage: window.localStorage,
+          storageKey: 'axiom-auth'
         }
       });
-    } catch (e) {
-      console.warn('[Axiom] online counter failed', e);
-      setCount(0);
-      floatEl.classList.add('offline');
-      countEl.textContent = '-';
+      window.axiomSb = sb;
     }
-  })();
-
+  } catch (e) {
+    console.warn('[Axiom] Supabase client failed', e);
+    sb = null;
+  }
 
   let username = localStorage.getItem('axiomUsername') || '';
   let chatChannel = null;
@@ -6853,7 +6796,7 @@ window.addEventListener('load', () => {
       if (apps) apps.classList.remove('open');
       document.querySelectorAll('body > iframe, body > div').forEach(function (el) {
         try {
-          var skipIds = ['gameModal','gameAdOverlay','appsPage','settingsPanel','settingsOverlay','levelOverlay','homeWallpaper','particles','achToast','axiomSocialBar','musicPill','authModal','proxyAnnouncementModal','viewHome','viewGames','viewChat','rail','frameStack','onlineFloat'];
+          var skipIds = ['gameModal','gameAdOverlay','appsPage','settingsPanel','settingsOverlay','levelOverlay','homeWallpaper','particles','achToast','axiomSocialBar','musicPill','authModal','proxyAnnouncementModal','viewHome','viewGames','viewChat','rail','frameStack'];
           if (el.id && skipIds.indexOf(el.id) !== -1) return;
           if (el.classList && (el.classList.contains('rail') || el.classList.contains('view') || el.classList.contains('clock-float'))) return;
           var st = window.getComputedStyle(el);
