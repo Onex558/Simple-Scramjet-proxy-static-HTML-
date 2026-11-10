@@ -2015,7 +2015,7 @@ const customGames = [
  { name:"Geoguesser", author:"MOjang", resolvedCover:"https://cdn.jsdelivr.net/gh/Onex558/uranium-source-@main/images/geoguseeerrr.jpg", resolvedUrl:"https://openguessr.com/", needsProxy: true, source: "axiom" },
 
  { name:"prodigy 3.15", author:"Axiom", resolvedCover:"https://cdn.jsdelivr.net/gh/Onex558/uranium-source-@main/images/prodigysss.png", resolvedUrl:"https://daboss7173.github.io/oldprodigy/3-15-3/", needsProxy: true, source: "axiom" },
- { name:"Minecraft Story Mode", author:"Axiom", resolvedCover:"https://cdn.jsdelivr.net/gh/Onex558/uranium-source-@main/images/mcsm.jpg", resolvedUrl:"https://script.google.com/macros/s/AKfycbwg-9LSbXiOC0WsjvQl8BlzMjPGw37eAjPv6qTNy5FQMloNycj5M5zTqxwhwFIRqRHlRw/exec" },
+ { name:"Minecraft Story Mode", author:"Axiom", resolvedCover:"https://cdn.jsdelivr.net/gh/Onex558/uranium-source-@main/images/mcsm.jpg", resolvedUrl:"https://script.google.com/macros/s/AKfycbwg-9LSbXiOC0WsjvQl8BlzMjPGw37eAjPv6qTNy5FQMloNycj5M5zTqxwhwFIRqRHlRw/exec", source: "axiom", direct: true },
 
 
  { name:"prodigy 2.30", author:"Axiom", resolvedCover:"https://cdn.jsdelivr.net/gh/Onex558/uranium-source-@main/images/prodigysss.png", resolvedUrl:"https://daboss7173.github.io/oldprodigy/2-30-0/", needsProxy: true, source: "axiom" },
@@ -4763,6 +4763,12 @@ function openGame(game) {
   try { trackGameOpen(game); } catch (_) {}
 
   function actuallyPlay() {
+    // Force pure iframe for direct games and Google Apps Script
+    if (game.direct || /script\.google\.com/i.test(url)) {
+      openDirectApp(game.name || 'Game', url);
+      return;
+    }
+
     // about:blank stealth: still use HTML blob so it RENDERS, not source code
     if (settings.openAboutBlank) {
       fetchGameHtml(url)
@@ -4824,12 +4830,9 @@ function openDirectApp(name, url) {
   if (typeof hideModalError === 'function') hideModalError();
   try { gameFrame.removeAttribute('srcdoc'); } catch (e) {}
 
-  // Prevent iframe from navigating the top page (frame-bust -> home)
+  // Remove sandbox so WASM / Apps Script games (Minecraft Story Mode) can run in iframe
   try {
-    gameFrame.setAttribute(
-      'sandbox',
-      'allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-downloads allow-pointer-lock'
-    );
+    gameFrame.removeAttribute('sandbox');
   } catch (e) {}
 
   gameFrame.style.display = 'block';
