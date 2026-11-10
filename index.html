@@ -110,6 +110,33 @@ body, button, a, .game-card, .rail-btn, input, select, .tool-btn, .filter-btn, .
   cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 24 24'%3E%3Cpath fill='%23c4b5fd' stroke='%23ffffff' stroke-width='1.2' d='M5.5 3.21V20.8c0 .10.0.2.2.35l4.86-4.86h7.09c.67 0 1.01-.81.53-1.28L6.35 2.87a.5.5 0 0 0-.85.34z'/%3E%3C/svg%3E") 4 2, pointer !important;
 }
 
+/* ===== CURSOR LOCK FIX: disable custom cursor while a game is open ===== */
+body.game-playing,
+body.game-playing *,
+#gameModal.open,
+#gameModal.open * {
+  cursor: none !important;
+}
+/* Keep modal chrome buttons usable */
+#gameModal.open .modal-controls,
+#gameModal.open .modal-controls *,
+#gameModal.open .proxy-bar,
+#gameModal.open .proxy-bar *,
+#gameModal.open .proxy-tabs,
+#gameModal.open .proxy-tabs *,
+#gameModal.open .music-controls,
+#gameModal.open .music-controls *,
+#gameModal.open .game-ad-skip {
+  cursor: pointer !important;
+}
+/* Let the iframe own the pointer for lock games */
+#gameModal.open #frameStack,
+#gameModal.open #frameStack iframe,
+#gameModal.open .proxy-frame {
+  cursor: none !important;
+  pointer-events: auto !important;
+}
+
 /* soft aurora, no grid */
 body::before{
   content:"";
@@ -1438,7 +1465,7 @@ body.has-wallpaper::before{ opacity:0.5; }
   </div>
  </div>
  <div id="frameStack">
-  <iframe id="gameFrame" class="proxy-frame active-frame" allowfullscreen="true" allow="fullscreen *; autoplay *; gamepad *; pointer-lock *; clipboard-read *; clipboard-write *; accelerometer *; gyroscope *; magnetometer *; camera *; microphone *; payment *; midi *; encrypted-media *; picture-in-picture *; display-capture *; scripts *" referrerpolicy="no-referrer" loading="eager" style="background:#000;"></iframe>
+  <iframe id="gameFrame" class="proxy-frame active-frame" allowfullscreen="true" allow="fullscreen *; autoplay *; gamepad *; pointer-lock *; clipboard-read *; clipboard-write *; accelerometer *; gyroscope *; magnetometer *; camera *; microphone *; payment *; midi *; encrypted-media *; picture-in-picture *; display-capture *; scripts *" referrerpolicy="no-referrer" loading="eager" tabindex="0" style="background:#000;"></iframe>
  </div>
  <div id="proxyLoadScreen" aria-hidden="true">
   <div class="pls-mark">A</div>
@@ -1890,7 +1917,39 @@ const statusLine = document.getElementById('statusLine');
 const searchInput = document.getElementById('searchInput');
 const clearSearchBtn = document.getElementById('clearSearchBtn');
 const gameModal = document.getElementById('gameModal');
+
 const gameFrame = document.getElementById('gameFrame');
+
+/* ===== CURSOR / POINTER-LOCK helpers ===== */
+function enableGamePlayingCursor() {
+  try { document.body.classList.add('game-playing'); } catch (_) {}
+}
+function disableGamePlayingCursor() {
+  try { document.body.classList.remove('game-playing'); } catch (_) {}
+}
+function focusGameFrameForPointerLock(frame) {
+  try {
+    const f = frame || (typeof currentFrame === 'function' ? currentFrame() : gameFrame) || gameFrame;
+    if (!f) return;
+    try { f.removeAttribute('sandbox'); } catch (_) {}
+    // Ensure permissions policy includes pointer-lock
+    try {
+      const allow = f.getAttribute('allow') || '';
+      if (!/pointer-lock/i.test(allow)) {
+        f.setAttribute('allow', (allow ? allow + '; ' : '') + 'pointer-lock *');
+      }
+    } catch (_) {}
+    try { f.setAttribute('tabindex', '0'); } catch (_) {}
+    // Focus so the next click / lock request targets the iframe
+    setTimeout(function () {
+      try { f.focus(); } catch (_) {}
+    }, 50);
+    setTimeout(function () {
+      try { f.focus(); } catch (_) {}
+    }, 400);
+  } catch (_) {}
+}
+
 const frameStack = document.getElementById('frameStack');
 const modalError = document.getElementById('modalError');
 const particlesEl = document.getElementById('particles');
@@ -4258,6 +4317,8 @@ function makeProxyFrame() {
   ].join('; '));
   f.setAttribute('referrerpolicy', 'no-referrer');
   f.setAttribute('loading', 'eager');
+  f.setAttribute('tabindex', '0');
+  try { f.removeAttribute('sandbox'); } catch (_) {}
   frameStack.appendChild(f);
   attachScramjetFrame(f);
   return f;
@@ -4693,10 +4754,15 @@ function prepareGameModal(name) {
   document.body.style.overflow = 'hidden';
   gameModal.classList.add('open');
   document.body.classList.add('rail-hidden');
+  if (typeof enableGamePlayingCursor === 'function') enableGamePlayingCursor();
+  try { gameFrame.removeAttribute('sandbox'); } catch (_) {}
   resetModalChrome();
   showModalChrome();
   clearTimeout(modalChromeHideTimer);
   modalChromeHideTimer = setTimeout(hideModalChrome, 1800);
+  if (typeof focusGameFrameForPointerLock === 'function') {
+    setTimeout(function () { focusGameFrameForPointerLock(gameFrame); }, 100);
+  }
   try { if (typeof window.__axiomScheduleFirstAd === 'function') window.__axiomScheduleFirstAd(); } catch (_) {}
   try { if (typeof window.__axiomStartGameAds === 'function') window.__axiomStartGameAds(); } catch (_) {}
 }
@@ -4843,6 +4909,7 @@ function openDirectApp(name, url) {
   document.body.style.overflow = 'hidden';
   gameModal.classList.add('open');
   document.body.classList.add('rail-hidden');
+  if (typeof enableGamePlayingCursor === 'function') enableGamePlayingCursor();
   if (typeof resetModalChrome === 'function') resetModalChrome();
   if (typeof showModalChrome === 'function') showModalChrome();
   try {
@@ -4858,6 +4925,7 @@ function openDirectApp(name, url) {
   gameFrame.onload = function () {
     frameLoaded = true;
     if (typeof hideProxyLoadScreen === 'function') hideProxyLoadScreen();
+    if (typeof focusGameFrameForPointerLock === 'function') focusGameFrameForPointerLock(gameFrame);
   };
   gameFrame.onerror = function () {
     if (frameLoaded) return;
@@ -4935,6 +5003,7 @@ function closeModal() {
  if (!confirmLeaveProgress('leave')) return;
  proxyMode = false;
  showProxyBar(false);
+ if (typeof disableGamePlayingCursor === 'function') disableGamePlayingCursor();
  gameModal.classList.remove('open');
  gameModal.classList.remove('proxy-mode');
  gameModal.classList.remove('music-mode');
@@ -6281,6 +6350,27 @@ setInterval(updateClock, 1000);
       else syncWispUiVisibility();
     }
   } catch (_) {}
+})();
+
+
+/* Click on game frame focuses it so pointer-lock games work */
+(function wirePointerLockFocus() {
+  function onFrameClick(e) {
+    try {
+      if (!gameModal || !gameModal.classList.contains('open')) return;
+      const f = (typeof currentFrame === 'function' ? currentFrame() : null) || gameFrame;
+      if (f) {
+        try { f.focus(); } catch (_) {}
+      }
+    } catch (_) {}
+  }
+  if (frameStack) {
+    frameStack.addEventListener('mousedown', onFrameClick, true);
+    frameStack.addEventListener('click', onFrameClick, true);
+  }
+  document.addEventListener('pointerlockerror', function () {
+    console.warn('[Axiom] Pointer lock failed — click inside the game area, then try again');
+  });
 })();
 
 function axiomBootGames() {
