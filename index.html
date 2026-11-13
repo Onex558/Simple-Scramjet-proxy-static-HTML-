@@ -1,9 +1,3 @@
-
-
-
-
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -3548,17 +3542,27 @@ function attachScramjetFrame(iframe) {
    Google Apps Script cannot host /scram — this is the working path there.
 */
 const ALT_PROXY_WS_LIST = [
+  'wss://bestspark.org/wisp/',
   'wss://d1vajlb5xnngpm.cloudfront.net/api/',
   'wss://wisp.mercurywork.shop/',
   'wss://gointospace.app/wisp/'
 ];
-const CATCLASS_SVG = 'https://catclassgoat.s3.us-east-1.amazonaws.com/circle.svg';
-const ALT_PROXY_SVG_BRIDGES = [CATCLASS_SVG];
+
+/* --- bridges (order = preference) --- */
+const SJ_SINGLE_SVG =
+  'https://cdn.jsdelivr.net/gh/BestSpark687090/sj_singlefile@main/proxy-single.svg';
+const ZAKASTATIC_SVG =
+  'https://cdn.jsdelivr.net/gh/lightspedfr/zakastatic@main/logo-b2b3e4d75f89f6104a35c1c7a5972ddd1be2cf72.svg';
+const CATCLASS_SVG =
+  'https://catclassgoat.s3.us-east-1.amazonaws.com/circle.svg';
+
+const ALT_PROXY_SVG_BRIDGES = [SJ_SINGLE_SVG, ZAKASTATIC_SVG, CATCLASS_SVG];
 const ALT_PROXY_WS = ALT_PROXY_WS_LIST[0];
-const ALT_PROXY_SVG_BRIDGE = CATCLASS_SVG;
+const ALT_PROXY_SVG_BRIDGE = SJ_SINGLE_SVG;
+
 let _staticProxyBlobUrl = null;
 let _svgBridgeIndex = 0;
-const _svgFrameState = new WeakMap(); // iframe -> { ready, wisp, queue, onMsg }
+const _svgFrameState = new WeakMap();
 
 function isRestrictedProxyHost() {
   try {
@@ -3578,7 +3582,10 @@ function isRestrictedProxyHost() {
 
 function altProxyEncode(str) {
   try {
-    return btoa(unescape(encodeURIComponent(String(str)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    return btoa(unescape(encodeURIComponent(String(str))))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
   } catch (_) {
     try {
       return btoa(String(str)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -3591,24 +3598,37 @@ function altProxyEncode(str) {
 function pickWispForSvg() {
   try {
     const w = localStorage.getItem('axiomWisp') || localStorage.getItem('proxServer');
-    if (w && /^wss?:\/\//i.test(w)) return w.endsWith('/') ? w : (w + '/');
+    if (w && /^wss?:\/\//i.test(w)) return w.endsWith('/') ? w : w + '/';
   } catch (_) {}
   return ALT_PROXY_WS;
 }
 
 function pickSvgBridge() {
-  return CATCLASS_SVG;
+  return SJ_SINGLE_SVG;
 }
 
-/** Legacy URL form (some older SVGs). catclassgoat ignores these and uses postMessage. */
-function buildSvgProxyUrl(targetUrl) {
-  const bridge = CATCLASS_SVG;
+/** sj_singlefile uses plain ?goto=URL (no base64) */
+function buildSjSingleUrl(targetUrl) {
+  const u = String(targetUrl || '').trim();
+  return SJ_SINGLE_SVG + '?goto=' + encodeURIComponent(u);
+}
+
+/** zakastatic uses base64 w1 + go */
+function buildZakastaticUrl(targetUrl) {
   const ws = pickWispForSvg();
-  return bridge + '?w1=' + altProxyEncode(ws) + '&go=' + altProxyEncode(targetUrl);
+  function b64(s) {
+    try {
+      return btoa(String(s)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    } catch (_) {
+      return encodeURIComponent(String(s));
+    }
+  }
+  return ZAKASTATIC_SVG + '?w1=' + b64(ws) + '&go=' + b64(targetUrl);
 }
 
-function rotateSvgBridge() {
-  return CATCLASS_SVG;
+/** Legacy helper used by UV fallback etc. */
+function buildSvgProxyUrl(targetUrl) {
+  return buildSjSingleUrl(targetUrl);
 }
 
 function svgCmd(win, action, extra) {
@@ -3621,101 +3641,101 @@ function svgCmd(win, action, extra) {
   }
 }
 
-/**
- * Google Apps Script / HtmlService often breaks nested SW + direct SVG control.
- * Strategy:
- *  1) Primary: catclassgoat via blob HTML wrapper that postMessages setW1p + navigate
- *  2) Fallback: zakastatic query-param SVG (works with iframe.src only, no postMessage)
- *  3) Last resort: open bridge URL in a new tab so the user still gets a proxy
- */
-const ZAKASTATIC_SVG = 'https://cdn.jsdelivr.net/gh/lightspedfr/zakastatic@main/logo-b2b3e4d75f89f6104a35c1c7a5972ddd1be2cf72.svg';
-
-function buildZakastaticUrl(targetUrl) {
-  const ws = pickWispForSvg();
-  // plain base64 (no URI encode) — matches zakastatic decodeQueryValue
-  function b64(s) {
-    try {
-      return btoa(String(s)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-    } catch (_) {
-      return encodeURIComponent(String(s));
-    }
-  }
-  return ZAKASTATIC_SVG + '?w1=' + b64(ws) + '&go=' + b64(targetUrl);
-}
-
+/** postMessage wrapper for catclassgoat-style bridges */
 function buildCatclassgoatWrapperHtml(targetUrl) {
   const wisp = pickWispForSvg();
   const bridge = CATCLASS_SVG + (CATCLASS_SVG.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now();
-  // Wrapper is plain HTML (not SVG). It loads catclassgoat and drives it via postMessage.
-  return '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-    + '<style>html,body{margin:0;width:100%;height:100%;background:#000;overflow:hidden}'
-    + 'iframe{position:fixed;inset:0;width:100%;height:100%;border:0;background:#000}</style></head><body>'
-    + '<iframe id="x" allow="fullscreen *; autoplay *; encrypted-media *; clipboard-read *; clipboard-write *" allowfullscreen></iframe>'
-    + '<script>(function(){\n'
-    + 'var W=' + JSON.stringify(wisp) + ';\n'
-    + 'var U=' + JSON.stringify(String(targetUrl)) + ';\n'
-    + 'var B=' + JSON.stringify(bridge) + ';\n'
-    + 'var x=document.getElementById("x");\n'
-    + 'var ready=false, sent=false;\n'
-    + 'function send(action, extra){\n'
-    + '  try{\n'
-    + '    var msg={type:"e:command",action:action};\n'
-    + '    if(extra){for(var k in extra)msg[k]=extra[k];}\n'
-    + '    x.contentWindow.postMessage(msg,"*");\n'
-    + '  }catch(e){}\n'
-    + '}\n'
-    + 'function boot(){\n'
-    + '  if(sent)return; sent=true;\n'
-    + '  send("setW1p",{w1p:W});\n'
-    + '  setTimeout(function(){ send("navigate",{url:U}); }, 250);\n'
-    + '  setTimeout(function(){ send("navigate",{url:U}); }, 1200);\n'
-    + '}\n'
-    + 'window.addEventListener("message",function(e){\n'
-    + '  var d=e.data; if(!d||d.source!=="e")return;\n'
-    + '  if(d.type==="e:ready"){ ready=true; sent=false; boot(); }\n'
-    + '  try{ parent.postMessage(d,"*"); }catch(err){}\n'
-    + '});\n'
-    + 'x.addEventListener("load",function(){ setTimeout(boot, 400); });\n'
-    + 'x.src=B;\n'
-    + '})();</scr' + 'ipt></body></html>';
+  return (
+    '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
+    '<style>html,body{margin:0;width:100%;height:100%;background:#000;overflow:hidden}' +
+    'iframe{position:fixed;inset:0;width:100%;height:100%;border:0;background:#000}</style></head><body>' +
+    '<iframe id="x" allow="fullscreen *; autoplay *; encrypted-media *; clipboard-read *; clipboard-write *" allowfullscreen></iframe>' +
+    '<script>(function(){\n' +
+    'var W=' +
+    JSON.stringify(wisp) +
+    ';\n' +
+    'var U=' +
+    JSON.stringify(String(targetUrl)) +
+    ';\n' +
+    'var B=' +
+    JSON.stringify(bridge) +
+    ';\n' +
+    'var x=document.getElementById("x");\n' +
+    'var ready=false, sent=false;\n' +
+    'function send(action, extra){\n' +
+    '  try{\n' +
+    '    var msg={type:"e:command",action:action};\n' +
+    '    if(extra){for(var k in extra)msg[k]=extra[k];}\n' +
+    '    x.contentWindow.postMessage(msg,"*");\n' +
+    '  }catch(e){}\n' +
+    '}\n' +
+    'function boot(){\n' +
+    '  if(sent)return; sent=true;\n' +
+    '  send("setW1p",{w1p:W});\n' +
+    '  setTimeout(function(){ send("navigate",{url:U}); }, 250);\n' +
+    '  setTimeout(function(){ send("navigate",{url:U}); }, 1200);\n' +
+    '}\n' +
+    'window.addEventListener("message",function(e){\n' +
+    '  var d=e.data; if(!d||d.source!=="e")return;\n' +
+    '  if(d.type==="e:ready"){ ready=true; sent=false; boot(); }\n' +
+    '  try{ parent.postMessage(d,"*"); }catch(err){}\n' +
+    '});\n' +
+    'x.addEventListener("load",function(){ setTimeout(boot, 400); });\n' +
+    'x.src=B;\n' +
+    '})();</scr' +
+    'ipt></body></html>'
+  );
 }
 
+/**
+ * Main SVG loader — tries sj_singlefile first, then zakastatic, then catclassgoat.
+ * Keep the function name loadCatclassgoatProxy so the rest of Axiom still calls it.
+ */
 function loadCatclassgoatProxy(iframe, targetUrl) {
   if (!iframe || !targetUrl) return false;
   try {
     ensureSvgBridgeListener(iframe);
 
-    // Prefer blob wrapper (works better than srcdoc under some GAS sandboxes)
-    const html = buildCatclassgoatWrapperHtml(targetUrl);
-    let blobUrl = null;
+    // 1) Primary: sj_singlefile direct iframe (same as WinHTML11)
+    iframe.removeAttribute('srcdoc');
     try {
-      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-      blobUrl = URL.createObjectURL(blob);
+      const prev = iframe.getAttribute('data-blob');
+      if (prev) URL.revokeObjectURL(prev);
+      iframe.removeAttribute('data-blob');
     } catch (_) {}
 
-    iframe.removeAttribute('srcdoc');
-    if (blobUrl) {
-      try {
-        const prev = iframe.getAttribute('data-blob');
-        if (prev) URL.revokeObjectURL(prev);
-      } catch (_) {}
-      try { iframe.setAttribute('data-blob', blobUrl); } catch (_) {}
-      iframe.src = blobUrl;
-    } else {
-      iframe.srcdoc = html;
-    }
+    iframe.src = buildSjSingleUrl(targetUrl);
 
-    // Safety net: if bridge does not respond, fall back to zakastatic query SVG
     const token = String(Date.now());
     iframe.setAttribute('data-proxy-token', token);
+
+    // 2) If still not usable after 6s, fall back to zakastatic
     setTimeout(function () {
       try {
         if (iframe.getAttribute('data-proxy-token') !== token) return;
-        // If still blank-ish / error, swap to zakastatic
         const st = _svgFrameState.get(iframe);
-        if (st && st.gotReady) return;
-        console.warn('[Axiom] catclassgoat slow/failed — falling back to zakastatic query SVG');
-        iframe.removeAttribute('srcdoc');
+        // sj_singlefile doesn't always post e:ready — only swap if frame looks dead
+        let dead = false;
+        try {
+          const doc = iframe.contentDocument;
+          if (doc && doc.body) {
+            const t = (doc.body.innerText || '').toLowerCase();
+            if (
+              t.indexOf('ssl connect error') !== -1 ||
+              t.indexOf('error code 35') !== -1 ||
+              t.indexOf('could not connect') !== -1 ||
+              t.indexOf('internal sw error') !== -1
+            ) {
+              dead = true;
+            }
+          }
+        } catch (_) {
+          /* cross-origin = probably loaded, leave it */
+        }
+        if (!dead && st && st.gotReady) return;
+        if (!dead) return; // assume ok if no error text
+
+        console.warn('[Axiom] sj_singlefile failed — falling back to zakastatic');
         iframe.src = buildZakastaticUrl(targetUrl);
         if (typeof showToast === 'function' && !window.__zakaFbToast) {
           window.__zakaFbToast = true;
@@ -3724,7 +3744,49 @@ function loadCatclassgoatProxy(iframe, targetUrl) {
       } catch (e) {
         console.warn(e);
       }
-    }, 5000);
+    }, 6000);
+
+    // 3) Last resort after 12s: catclassgoat wrapper
+    setTimeout(function () {
+      try {
+        if (iframe.getAttribute('data-proxy-token') !== token) return;
+        let dead = false;
+        try {
+          const doc = iframe.contentDocument;
+          if (doc && doc.body) {
+            const t = (doc.body.innerText || '').toLowerCase();
+            if (
+              t.indexOf('ssl connect error') !== -1 ||
+              t.indexOf('error code 35') !== -1 ||
+              t.indexOf('could not connect') !== -1 ||
+              t.indexOf('internal sw error') !== -1
+            ) {
+              dead = true;
+            }
+          }
+        } catch (_) {}
+        if (!dead) return;
+
+        console.warn('[Axiom] zakastatic also failed — trying catclassgoat wrapper');
+        const html = buildCatclassgoatWrapperHtml(targetUrl);
+        let blobUrl = null;
+        try {
+          blobUrl = URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' }));
+        } catch (_) {}
+        if (blobUrl) {
+          try {
+            const prev = iframe.getAttribute('data-blob');
+            if (prev) URL.revokeObjectURL(prev);
+          } catch (_) {}
+          iframe.setAttribute('data-blob', blobUrl);
+          iframe.src = blobUrl;
+        } else {
+          iframe.srcdoc = html;
+        }
+      } catch (e) {
+        console.warn(e);
+      }
+    }, 12000);
 
     return true;
   } catch (e) {
@@ -3801,7 +3863,7 @@ function buildStaticProxyShellHtml(targetUrl) {
   parts.push('var BRIDGE="https://catclassgoat.s3.us-east-1.amazonaws.com/circle.svg";');
   parts.push('function encode(str){return btoa(str).replace(/\\+/g,"-").replace(/\\//g,"_").replace(/=+$/,"");}');
   parts.push('function go(){var val=document.getElementById("url").value.trim();if(!val)return;');
-  parts.push('if(!val.includes(".")||val.includes(" ")){val="https://duckduckgo.com/?q="+encodeURIComponent(val);}');
+  parts.push('if(!val.includes(".")||val.includes(" ")){val="https://www.google.com/search?q="+encodeURIComponent(val);}');
   parts.push('else if(!val.startsWith("http")){val="https://"+val;}');
   parts.push('document.getElementById("frame").src=BRIDGE+"?w1="+encode(WS)+"&go="+encode(val);');
   parts.push('try{parent.postMessage({type:"axiom-static-nav",url:val},"*");}catch(e){}}');
@@ -4005,9 +4067,9 @@ function proxyNavigateFrame(iframe, url) {
         }
         const frame = typeof currentFrame === 'function' ? currentFrame() : null;
         if (frame && typeof loadCatclassgoatProxy === 'function') {
-          loadCatclassgoatProxy(frame, targetUrl || activeSessionUrl || 'https://duckduckgo.com');
+          loadCatclassgoatProxy(frame, targetUrl || activeSessionUrl || 'https://www.google.com');
         } else if (typeof navigateProxy === 'function') {
-          navigateProxy(targetUrl || activeSessionUrl || 'https://duckduckgo.com');
+          navigateProxy(targetUrl || activeSessionUrl || 'https://www.google.com');
         }
         return;
       }
@@ -4027,7 +4089,7 @@ function proxyNavigateFrame(iframe, url) {
       // Reload current page through proxy with new wisp
       setTimeout(function () {
         if (typeof navigateProxy === 'function') {
-          navigateProxy(targetUrl || activeSessionUrl || 'https://duckduckgo.com');
+          navigateProxy(targetUrl || activeSessionUrl || 'https://www.google.com');
         }
       }, 350);
     } finally {
@@ -4042,7 +4104,7 @@ function proxyNavigateFrame(iframe, url) {
       if (!doc) return;
       const bodyText = (doc.body && doc.body.innerText) || '';
       if (looksLikeSwConnectError(bodyText)) {
-        const url = activeSessionUrl || 'https://duckduckgo.com';
+        const url = activeSessionUrl || 'https://www.google.com';
         if (url === lastFailUrl && rotating) return;
         lastFailUrl = url;
         tryNextWispOrSvg(url);
@@ -4075,7 +4137,7 @@ function proxyNavigateFrame(iframe, url) {
   // Manual recovery API
   window.__axiomRetryProxy = function () {
     failCount = 0;
-    tryNextWispOrSvg(activeSessionUrl || 'https://duckduckgo.com');
+    tryNextWispOrSvg(activeSessionUrl || 'https://www.google.com');
   };
 
   // When user is on about:blank school chromebook and opens proxy with UV/Scramjet,
@@ -4102,7 +4164,7 @@ function normalizeProxyUrl(raw) {
   }
 
   // Otherwise search.
-  return 'https://duckduckgo.com/?q=' + encodeURIComponent(value);
+  return 'https://www.google.com/search?q=' + encodeURIComponent(value);
 }
 
 function buildProxySrc(url) {
@@ -4127,7 +4189,7 @@ function showProxyHome(show) {
       let q = inp.value.trim();
       if (!q) return;
       if (!q.includes('.') && !q.startsWith('http')) {
-        q = 'https://duckduckgo.com/?q=' + encodeURIComponent(q);
+        q = 'https://www.google.com/search?q=' + encodeURIComponent(q);
       } else if (!q.startsWith('http://') && !q.startsWith('https://')) {
         q = 'https://' + q;
       }
@@ -4184,7 +4246,7 @@ function openProxy(initialUrl, cleanMode) {
 
   // Default to DuckDuckGo when no URL is provided (basic browser behavior)
   if (!initialUrl && !cleanMode) {
-    initialUrl = 'https://duckduckgo.com';
+    initialUrl = 'https://www.google.com';
   }
 
   // Restricted hosts (Google Script) cannot use Scramjet/UV — force SVG there only
