@@ -104,31 +104,41 @@ body, button, a, .game-card, .rail-btn, input, select, .tool-btn, .filter-btn, .
   cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 24 24'%3E%3Cpath fill='%23c4b5fd' stroke='%23ffffff' stroke-width='1.2' d='M5.5 3.21V20.8c0 .10.0.2.2.35l4.86-4.86h7.09c.67 0 1.01-.81.53-1.28L6.35 2.87a.5.5 0 0 0-.85.34z'/%3E%3C/svg%3E") 4 2, pointer !important;
 }
 
-/* ===== CURSOR LOCK FIX: disable custom cursor while a game is open ===== */
+/* ===== CURSOR LOCK FIX: game sessions only (not proxy browser / music) =====
+   Custom site cursor is suppressed only while body.game-playing is set.
+   Pointer-lock games need a system cursor + focused iframe; CSS alone cannot
+   call requestPointerLock — the game does that after the player clicks. */
 body.game-playing,
-body.game-playing *,
-#gameModal.open,
-#gameModal.open * {
+body.game-playing * {
   cursor: none !important;
 }
-/* Keep modal chrome buttons usable */
-#gameModal.open .modal-controls,
-#gameModal.open .modal-controls *,
-#gameModal.open .proxy-bar,
-#gameModal.open .proxy-bar *,
-#gameModal.open .proxy-tabs,
-#gameModal.open .proxy-tabs *,
-#gameModal.open .music-controls,
-#gameModal.open .music-controls *,
-#gameModal.open .game-ad-skip {
+/* Keep modal chrome / ad skip usable during games */
+body.game-playing .modal-controls,
+body.game-playing .modal-controls *,
+body.game-playing .game-ad-skip,
+body.game-playing #gameAdOverlay,
+body.game-playing #gameAdOverlay * {
   cursor: pointer !important;
 }
-/* Let the iframe own the pointer for lock games */
-#gameModal.open #frameStack,
-#gameModal.open #frameStack iframe,
-#gameModal.open .proxy-frame {
+/* Game iframe owns the pointer for lock / FPS games */
+body.game-playing #frameStack,
+body.game-playing #frameStack iframe,
+body.game-playing .proxy-frame {
   cursor: none !important;
   pointer-events: auto !important;
+}
+/* Fullscreen game: same rules (modal is fullscreen element) */
+#gameModal:fullscreen.game-fs body,
+body.game-playing:has(#gameModal:fullscreen) #frameStack,
+body.game-playing:has(#gameModal:fullscreen) #frameStack iframe {
+  cursor: none !important;
+}
+/* Proxy browser / music mode: never force cursor:none on the whole modal */
+#gameModal.proxy-mode,
+#gameModal.proxy-mode *,
+#gameModal.music-mode,
+#gameModal.music-mode * {
+  /* leave default / custom cursor; chrome already has pointer styles */
 }
 
 /* soft aurora, no grid */
@@ -1914,35 +1924,74 @@ const gameModal = document.getElementById('gameModal');
 
 const gameFrame = document.getElementById('gameFrame');
 
-/* ===== CURSOR / POINTER-LOCK helpers ===== */
+/* ===== CURSOR / POINTER-LOCK helpers (games only) ===== */
 function enableGamePlayingCursor() {
-  try { document.body.classList.add('game-playing'); } catch (_) {}
+  try {
+    // Never apply during proxy browser or music player
+    if (typeof proxyMode !== 'undefined' && proxyMode) return;
+    if (gameModal && (gameModal.classList.contains('proxy-mode') || gameModal.classList.contains('music-mode'))) return;
+    document.body.classList.add('game-playing');
+  } catch (_) {}
 }
 function disableGamePlayingCursor() {
-  try { document.body.classList.remove('game-playing'); } catch (_) {}
+  try {
+    document.body.classList.remove('game-playing');
+    // Release OS pointer lock if a game held it
+    if (document.pointerLockElement) {
+      try { document.exitPointerLock(); } catch (_) {}
+    }
+  } catch (_) {}
 }
 function focusGameFrameForPointerLock(frame) {
   try {
     const f = frame || (typeof currentFrame === 'function' ? currentFrame() : gameFrame) || gameFrame;
     if (!f) return;
     try { f.removeAttribute('sandbox'); } catch (_) {}
-    // Ensure permissions policy includes pointer-lock
+    // Permissions policy must allow pointer-lock (and fullscreen) for embed games
     try {
-      const allow = f.getAttribute('allow') || '';
-      if (!/pointer-lock/i.test(allow)) {
-        f.setAttribute('allow', (allow ? allow + '; ' : '') + 'pointer-lock *');
-      }
+      const need = ['pointer-lock *', 'fullscreen *', 'gamepad *'];
+      let allow = f.getAttribute('allow') || '';
+      need.forEach(function (p) {
+        if (!new RegExp(p.replace('*', '\\*'), 'i').test(allow)) {
+          allow = (allow ? allow.replace(/;?\s*$/, '') + '; ' : '') + p;
+        }
+      });
+      f.setAttribute('allow', allow);
     } catch (_) {}
     try { f.setAttribute('tabindex', '0'); } catch (_) {}
-    // Focus so the next click / lock request targets the iframe
-    setTimeout(function () {
-      try { f.focus(); } catch (_) {}
-    }, 50);
-    setTimeout(function () {
-      try { f.focus(); } catch (_) {}
-    }, 400);
+    // Focus so the next user click can requestPointerLock inside the game
+    function doFocus() {
+      try { f.focus({ preventScroll: true }); } catch (_) {
+        try { f.focus(); } catch (_) {}
+      }
+    }
+    doFocus();
+    setTimeout(doFocus, 50);
+    setTimeout(doFocus, 400);
+    setTimeout(doFocus, 1200);
   } catch (_) {}
 }
+
+/* Re-focus iframe after entering/leaving fullscreen so lock games keep working */
+(function wireFullscreenPointerLock() {
+  function onFs() {
+    try {
+      if (!gameModal || !gameModal.classList.contains('open')) return;
+      if (!document.body.classList.contains('game-playing')) return;
+      if (document.fullscreenElement) {
+        gameModal.classList.add('game-fs');
+      } else {
+        gameModal.classList.remove('game-fs');
+      }
+      // Always re-focus the active game frame after FS transition
+      setTimeout(function () {
+        focusGameFrameForPointerLock(typeof currentFrame === 'function' ? currentFrame() : gameFrame);
+      }, 80);
+    } catch (_) {}
+  }
+  document.addEventListener('fullscreenchange', onFs);
+  document.addEventListener('webkitfullscreenchange', onFs);
+})();
 
 const frameStack = document.getElementById('frameStack');
 const modalError = document.getElementById('modalError');
@@ -4264,6 +4313,7 @@ function openProxy(initialUrl, cleanMode) {
   } catch (_) {}
 
   proxyMode = true;
+  if (typeof disableGamePlayingCursor === 'function') disableGamePlayingCursor();
   activeSessionName = 'Proxy';
   activeSessionUrl = null;
   proxyHistory = [];
@@ -6416,14 +6466,19 @@ setInterval(updateClock, 1000);
 })();
 
 
-/* Click on game frame focuses it so pointer-lock games work */
+/* Click on game frame focuses it so pointer-lock games work (games only) */
 (function wirePointerLockFocus() {
   function onFrameClick(e) {
     try {
       if (!gameModal || !gameModal.classList.contains('open')) return;
+      // Proxy browser should keep normal focus behavior for address bar / page
+      if (proxyMode || gameModal.classList.contains('proxy-mode') || gameModal.classList.contains('music-mode')) return;
+      if (!document.body.classList.contains('game-playing')) return;
       const f = (typeof currentFrame === 'function' ? currentFrame() : null) || gameFrame;
       if (f) {
-        try { f.focus(); } catch (_) {}
+        try { f.focus({ preventScroll: true }); } catch (_) {
+          try { f.focus(); } catch (_) {}
+        }
       }
     } catch (_) {}
   }
@@ -6432,7 +6487,16 @@ setInterval(updateClock, 1000);
     frameStack.addEventListener('click', onFrameClick, true);
   }
   document.addEventListener('pointerlockerror', function () {
-    console.warn('[Axiom] Pointer lock failed — click inside the game area, then try again');
+    console.warn('[Axiom] Pointer lock failed — click inside the game area (or enter fullscreen), then try again');
+  });
+  document.addEventListener('pointerlockchange', function () {
+    // If lock was lost while still in a game, keep frame focused for re-lock
+    try {
+      if (!document.pointerLockElement && document.body.classList.contains('game-playing') && gameModal && gameModal.classList.contains('open')) {
+        const f = (typeof currentFrame === 'function' ? currentFrame() : null) || gameFrame;
+        if (f) setTimeout(function () { try { f.focus(); } catch (_) {} }, 30);
+      }
+    } catch (_) {}
   });
 })();
 
